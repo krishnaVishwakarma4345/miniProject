@@ -15,14 +15,18 @@ import {
   query,
   where,
   getDocs,
-  Query,
-  QueryConstraint,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "../client";
 import { User, UserRole } from "@/types/user.types";
 import { ApiError } from "@/types/api.types";
 
 const COLLECTION_NAME = "users";
+
+const toApiError = (code: string, message: string, error: unknown): ApiError => {
+  return new ApiError(message, code, 500, {
+    details: error instanceof Error ? error.message : String(error),
+  });
+};
 
 /**
  * Get single user by ID
@@ -45,11 +49,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       ...docSnap.data(),
     } as User;
   } catch (error) {
-    throw {
-      code: "firestore/get-user-failed",
-      message: "Failed to fetch user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/get-user-failed", "Failed to fetch user. Please try again.", error);
   }
 };
 
@@ -76,11 +76,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       ...doc.data(),
     } as User;
   } catch (error) {
-    throw {
-      code: "firestore/get-user-failed",
-      message: "Failed to fetch user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/get-user-failed", "Failed to fetch user. Please try again.", error);
   }
 };
 
@@ -107,11 +103,7 @@ export const getUsersByInstitution = async (
       ...doc.data(),
     } as User));
   } catch (error) {
-    throw {
-      code: "firestore/get-users-failed",
-      message: "Failed to fetch users. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/get-users-failed", "Failed to fetch users. Please try again.", error);
   }
 };
 
@@ -141,11 +133,7 @@ export const getUsersByRole = async (
       ...doc.data(),
     } as User));
   } catch (error) {
-    throw {
-      code: "firestore/get-users-failed",
-      message: "Failed to fetch users. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/get-users-failed", "Failed to fetch users. Please try again.", error);
   }
 };
 
@@ -156,7 +144,7 @@ export const getUsersByRole = async (
  * @throws ApiError on database error
  */
 export const getFacultyAdvisors = async (institutionId: string): Promise<User[]> => {
-  return getUsersByRole(institutionId, "faculty");
+  return getUsersByRole(institutionId, UserRole.FACULTY);
 };
 
 /**
@@ -180,11 +168,7 @@ export const setUser = async (
       updatedAt: new Date(),
     });
   } catch (error) {
-    throw {
-      code: "firestore/create-user-failed",
-      message: "Failed to create user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/create-user-failed", "Failed to create user. Please try again.", error);
   }
 };
 
@@ -208,11 +192,7 @@ export const updateUser = async (
       updatedAt: new Date(),
     });
   } catch (error) {
-    throw {
-      code: "firestore/update-user-failed",
-      message: "Failed to update user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/update-user-failed", "Failed to update user. Please try again.", error);
   }
 };
 
@@ -229,11 +209,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
     await deleteDoc(userRef);
   } catch (error) {
-    throw {
-      code: "firestore/delete-user-failed",
-      message: "Failed to delete user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/delete-user-failed", "Failed to delete user. Please try again.", error);
   }
 };
 
@@ -253,11 +229,7 @@ export const updateLastLogin = async (userId: string): Promise<void> => {
       updatedAt: new Date(),
     });
   } catch (error) {
-    throw {
-      code: "firestore/update-last-login-failed",
-      message: "Failed to update last login. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/update-last-login-failed", "Failed to update last login. Please try again.", error);
   }
 };
 
@@ -277,11 +249,7 @@ export const deactivateUser = async (userId: string): Promise<void> => {
       updatedAt: new Date(),
     });
   } catch (error) {
-    throw {
-      code: "firestore/deactivate-user-failed",
-      message: "Failed to deactivate user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/deactivate-user-failed", "Failed to deactivate user. Please try again.", error);
   }
 };
 
@@ -301,11 +269,7 @@ export const reactivateUser = async (userId: string): Promise<void> => {
       updatedAt: new Date(),
     });
   } catch (error) {
-    throw {
-      code: "firestore/reactivate-user-failed",
-      message: "Failed to reactivate user. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/reactivate-user-failed", "Failed to reactivate user. Please try again.", error);
   }
 };
 
@@ -339,14 +303,10 @@ export const searchUsers = async (
       )
       .filter(
         (user) =>
-          user.displayName.toLowerCase().includes(searchLower) ||
+          (user.displayName ?? user.fullName ?? "").toLowerCase().includes(searchLower) ||
           user.email.toLowerCase().includes(searchLower)
       );
   } catch (error) {
-    throw {
-      code: "firestore/search-users-failed",
-      message: "Failed to search users. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw toApiError("firestore/search-users-failed", "Failed to search users. Please try again.", error);
   }
 };

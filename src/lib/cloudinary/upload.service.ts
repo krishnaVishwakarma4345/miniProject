@@ -75,11 +75,12 @@ export const generateUploadSignature = async (
       apiKey: process.env.CLOUDINARY_API_KEY,
     };
   } catch (error: any) {
-    throw {
-      code: "cloudinary/signature-failed",
-      message: "Failed to generate upload signature.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to generate upload signature.",
+      "cloudinary/signature-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -98,7 +99,7 @@ export const uploadFileToCloudinary = async (
   options?: {
     publicId?: string;
     overwrite?: boolean;
-    resourceType?: string;
+    resourceType?: "image" | "video" | "raw" | "auto";
     tags?: string[];
   }
 ): Promise<any> => {
@@ -127,11 +128,12 @@ export const uploadFileToCloudinary = async (
       },
     };
   } catch (error: any) {
-    throw {
-      code: "cloudinary/upload-failed",
-      message: "Failed to upload file to Cloudinary.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to upload file to Cloudinary.",
+      "cloudinary/upload-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 

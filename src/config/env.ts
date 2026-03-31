@@ -7,11 +7,19 @@
 export const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key];
   
-  if (!value && !defaultValue) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
+  // if (!value && !defaultValue) {
+  //   throw new Error(`Missing required environment variable: ${key}`);
+  // }
   
   return value || defaultValue || '';
+};
+
+const getPublicEnv = (value: string | undefined, key: string, defaultValue?: string): string => {
+  const normalized = value?.trim();
+  if (!normalized && !defaultValue) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return normalized || defaultValue || '';
 };
 
 const getEnvBoolean = (key: string, defaultValue: boolean = false): boolean => {
@@ -24,12 +32,12 @@ const getEnvBoolean = (key: string, defaultValue: boolean = false): boolean => {
  * Firebase Client Configuration (public, safe for browser)
  */
 export const firebaseClientConfig = {
-  apiKey: getEnv('NEXT_PUBLIC_FIREBASE_API_KEY'),
-  authDomain: getEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-  projectId: getEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
-  storageBucket: getEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: getEnv('NEXT_PUBLIC_FIREBASE_APP_ID'),
+  apiKey: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY, 'NEXT_PUBLIC_FIREBASE_API_KEY'),
+  authDomain: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+  projectId: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+  storageBucket: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID, 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getPublicEnv(process.env.NEXT_PUBLIC_FIREBASE_APP_ID, 'NEXT_PUBLIC_FIREBASE_APP_ID'),
 } as const;
 
 /**
@@ -46,8 +54,8 @@ export const firebaseAdminConfig = {
  * Cloudinary Configuration
  */
 export const cloudinaryConfig = {
-  cloudName: getEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
-  uploadPreset: getEnv('NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET'),
+  cloudName: getPublicEnv(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, 'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
+  uploadPreset: getPublicEnv(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET, 'NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET'),
   apiKey: getEnv('CLOUDINARY_API_KEY'),
   apiSecret: getEnv('CLOUDINARY_API_SECRET'),
 } as const;

@@ -8,7 +8,7 @@ import { getAuthInstance } from '@/lib/firebase/client'
 import { useAuthStore } from '@/store/auth.store'
 import { useUIStore } from '@/store/ui.store'
 import { ApiError } from '@/types/api.types'
-import { User, UserRole } from '@/types/user.types'
+import { User, UserRole, UserStatus } from '@/types/user.types'
 
 export type UseAuthReturn = {
   // State
@@ -44,36 +44,52 @@ export function useAuth(): UseAuthReturn {
 
   // Initialize auth on mount
   useEffect(() => {
+    let isMounted = true
+    let unsubscribe: (() => void) | undefined
+
     const initAuth = async () => {
+      const store = useAuthStore.getState()
       try {
-        const auth = getAuthInstance()
+        const auth = await getAuthInstance()
         
         // Restore session from localStorage
-        await authStore.restoreSession()
+        await store.restoreSession()
 
         // Set up Firebase auth state listener
-        auth.onAuthStateChanged(async (firebaseUser) => {
+        unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+          if (!isMounted) return
+          const latestStore = useAuthStore.getState()
+          const hasSessionCookie = typeof document !== 'undefined'
+            ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
+            : false
           if (firebaseUser) {
-            // User is signed in, ensure Zustand state is in sync
-            if (!authStore.user) {
-              // In a real app, fetch user from Firestore here
-              // For now, we trust the localStorage data from Zustand persistence
-              authStore.setIsAuthenticated(true)
+            if (hasSessionCookie) {
+              latestStore.setIsAuthenticated(true)
+              latestStore.setSessionValid(true)
+            } else {
+              // Firebase local auth can persist without an app session cookie.
+              // Avoid redirect loops by treating this state as signed-out for protected routing.
+              latestStore.clearSession()
             }
           } else {
             // User signed out
-            authStore.clearSession()
+            latestStore.clearSession()
           }
           setInitialized(true)
         })
       } catch (error) {
         console.error('Auth initialization error:', error)
-        setInitialized(true)
+        if (isMounted) setInitialized(true)
       }
     }
 
     initAuth()
-  }, [authStore])
+
+    return () => {
+      isMounted = false
+      unsubscribe?.()
+    }
+  }, [])
 
   /**
    * Login with email and password
@@ -103,10 +119,15 @@ export function useAuth(): UseAuthReturn {
 
       // Step 3: Update Zustand auth store
       const user: User = {
+        uid: sessionData.userId,
         id: sessionData.userId,
+        fullName: userCredential.user.displayName || 'User',
         email: sessionData.email,
         displayName: userCredential.user.displayName || 'User',
         role: sessionData.role as UserRole,
+        status: UserStatus.ACTIVE,
+        language: 'en',
+        mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
         institutionId: '', // Will be set by session endpoint
         isActive: true,
@@ -173,10 +194,15 @@ export function useAuth(): UseAuthReturn {
 
       // Step 3: Update Zustand auth store
       const user: User = {
+        uid: sessionData.userId,
         id: sessionData.userId,
+        fullName: userCredential.user.displayName || 'User',
         email: sessionData.email,
         displayName: userCredential.user.displayName || 'User',
         role: sessionData.role as UserRole,
+        status: UserStatus.ACTIVE,
+        language: 'en',
+        mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
         institutionId: '', // Will be set by session endpoint
         isActive: true,
@@ -256,10 +282,15 @@ export function useAuth(): UseAuthReturn {
 
       // Step 3: Update Zustand auth store
       const user: User = {
+        uid: sessionData.userId,
         id: sessionData.userId,
+        fullName: displayName,
         email: sessionData.email,
         displayName: displayName,
         role: sessionData.role as UserRole,
+        status: UserStatus.ACTIVE,
+        language: 'en',
+        mfaEnabled: false,
         photoURL: undefined,
         institutionId: institutionId,
         isActive: true,
@@ -307,7 +338,7 @@ export function useAuth(): UseAuthReturn {
 
     try {
       // Step 1: Register with Google
-      const userCredential = await registerWithGoogle()
+      const userCredential = await registerWithGoogle(UserRole.STUDENT, '')
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
@@ -326,10 +357,15 @@ export function useAuth(): UseAuthReturn {
 
       // Step 3: Update Zustand auth store
       const user: User = {
+        uid: sessionData.userId,
         id: sessionData.userId,
+        fullName: userCredential.user.displayName || 'User',
         email: sessionData.email,
         displayName: userCredential.user.displayName || 'User',
         role: sessionData.role as UserRole,
+        status: UserStatus.ACTIVE,
+        language: 'en',
+        mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
         institutionId: '', // Will be set during onboarding
         isActive: true,

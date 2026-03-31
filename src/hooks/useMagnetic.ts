@@ -37,7 +37,7 @@ export const useMagnetic = (
   } = options;
 
   const mousePos = useRef<MousePosition>({ x: 0, y: 0 });
-  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  const tlRef = useRef<gsap.core.Tween | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
@@ -61,7 +61,6 @@ export const useMagnetic = (
     }
 
     const element = ref.current;
-    let animationFrameId: number;
 
     const onMouseMove = (e: MouseEvent) => {
       const rect = element.getBoundingClientRect();
@@ -92,6 +91,7 @@ export const useMagnetic = (
         tlRef.current = gsap.to(element, {
           x: shiftX,
           y: shiftY,
+          delay,
           duration: 0.3,
           ease: 'power2.out',
           overwrite: 'auto',
@@ -124,7 +124,7 @@ export const useMagnetic = (
         tlRef.current.kill();
       }
     };
-  }, [ref, magnetRadius, strength, enabled, isTouchDevice]);
+  }, [ref, magnetRadius, strength, delay, enabled, isTouchDevice]);
 };
 
 export default useMagnetic;

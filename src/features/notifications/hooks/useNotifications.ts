@@ -90,7 +90,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 				setNotifications(response.notifications, { replace: mode === "reset" })
 				setUnreadCount(response.unreadCount)
 				setHasMore(response.hasMore)
-				setCursor(response.nextCursor ?? response.cursor ?? null)
+				setCursor(response.cursor ?? null)
 			} catch (err) {
 				const message = err instanceof Error ? err.message : "Unable to load notifications"
 				setError(message)

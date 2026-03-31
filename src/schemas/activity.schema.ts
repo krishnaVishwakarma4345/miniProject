@@ -280,7 +280,7 @@ export const activityQuerySchema = z.object({
     .string()
     .transform(Number)
     .refine((n) => !isNaN(n) && n > 0 && n <= 100, "Invalid limit")
-    .default("20"),
+    .default(20),
   sortBy: z.enum(["newest", "oldest", "mostViewed", "trending"]).default("newest"),
   role: z.enum(["student", "faculty"]).optional(),
 });

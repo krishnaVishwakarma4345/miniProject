@@ -14,17 +14,40 @@ import { firebaseClientConfig, appConfig } from './env';
 let firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseClientConfig);
 
 // Initialize services
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
+let auth: ReturnType<typeof getAuth> | null = null;
+let db: ReturnType<typeof getFirestore> | null = null;
+let storage: ReturnType<typeof getStorage> | null = null;
+
+if (typeof window !== 'undefined') {
+  try {
+    auth = getAuth(firebaseApp);
+  } catch (error) {
+    console.error('Firebase Auth initialization failed. Check NEXT_PUBLIC_FIREBASE_* values.', error);
+  }
+
+  // Firestore/Storage are optional at app boot to keep public pages responsive.
+  try {
+    db = getFirestore(firebaseApp);
+  } catch (error) {
+    console.warn('Firestore unavailable during startup. Database features will be disabled until config is fixed.');
+  }
+
+  try {
+    storage = getStorage(firebaseApp);
+  } catch (error) {
+    console.warn('Storage unavailable during startup. Upload features will be disabled until config is fixed.');
+  }
+}
 
 /**
  * Configure Firebase Authentication
  */
 if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
   try {
-    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-    console.log('🔥 Firebase Auth Emulator connected (dev only)');
+    if (auth) {
+      connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+      console.log('🔥 Firebase Auth Emulator connected (dev only)');
+    }
   } catch (error) {
     // Emulator already connected or unavailable
   }
@@ -35,8 +58,10 @@ if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'tr
  */
 if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
   try {
-    connectFirestoreEmulator(db, 'localhost', 8080);
-    console.log('🔥 Firebase Firestore Emulator connected (dev only)');
+    if (db) {
+      connectFirestoreEmulator(db, 'localhost', 8080);
+      console.log('🔥 Firebase Firestore Emulator connected (dev only)');
+    }
   } catch (error) {
     // Emulator already connected or unavailable
   }
@@ -47,13 +72,15 @@ if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'tr
    * Only works in browser (not in SSR)
    */
   if (typeof window !== 'undefined') {
-    enableIndexedDbPersistence(db).catch((error) => {
-      if (error.code === 'failed-precondition') {
-        console.warn('⚠️ Multiple tabs open. IndexedDb persistence disabled.');
-      } else if (error.code === 'unimplemented') {
-        console.warn('⚠️ Browser does not support persistence.');
-      }
-    });
+    if (db) {
+      enableIndexedDbPersistence(db).catch((error) => {
+        if (error.code === 'failed-precondition') {
+          console.warn('⚠️ Multiple tabs open. IndexedDb persistence disabled.');
+        } else if (error.code === 'unimplemented') {
+          console.warn('⚠️ Browser does not support persistence.');
+        }
+      });
+    }
   }
 }
 
@@ -62,18 +89,13 @@ if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'tr
  */
 if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
   try {
-    connectStorageEmulator(storage, 'localhost', 9199);
-    console.log('🔥 Firebase Storage Emulator connected (dev only)');
+    if (storage) {
+      connectStorageEmulator(storage, 'localhost', 9199);
+      console.log('🔥 Firebase Storage Emulator connected (dev only)');
+    }
   } catch (error) {
     // Emulator already connected or unavailable
   }
-}
-
-/**
- * Set persistence settings for web
- */
-if (typeof window !== 'undefined') {
-  auth.setPersistence = auth.setPersistence || (() => Promise.resolve());
 }
 
 export const FIREBASE_CLIENT_CONFIG = firebaseClientConfig;

@@ -19,11 +19,20 @@ export function NotificationItem({ notification, onDismiss, onMarkRead, highligh
 		onDismiss?.(notification.id)
 	}
 
-	const handleMarkRead = (event?: MouseEvent<HTMLButtonElement>) => {
-		event?.stopPropagation()
+	const markRead = () => {
 		if (!notification.isRead) {
 			onMarkRead?.(notification.id)
 		}
+	}
+
+	const handleMarkReadFromButton = (event?: MouseEvent<HTMLButtonElement>) => {
+		event?.stopPropagation()
+		markRead()
+	}
+
+	const handleMarkReadFromLink = (event?: MouseEvent<HTMLAnchorElement>) => {
+		event?.stopPropagation()
+		markRead()
 	}
 
 	return (
@@ -71,7 +80,7 @@ export function NotificationItem({ notification, onDismiss, onMarkRead, highligh
 						<a
 							className="text-sky-600 transition hover:text-sky-700"
 							href={notification.action.target}
-							onClick={handleMarkRead}
+							onClick={handleMarkReadFromLink}
 						>
 							{notification.action.label}
 						</a>
@@ -79,7 +88,7 @@ export function NotificationItem({ notification, onDismiss, onMarkRead, highligh
 					{!notification.isRead ? (
 						<button
 							type="button"
-							onClick={handleMarkRead}
+							onClick={handleMarkReadFromButton}
 							className="rounded-full border border-slate-200 px-2 py-0.5 text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
 						>
 							Mark read

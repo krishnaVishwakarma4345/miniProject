@@ -98,7 +98,7 @@ export const signupSchema = z
     confirmPassword: z.string(),
 
     role: z.nativeEnum(UserRole, {
-      errorMap: () => ({ message: "Invalid role selected" }),
+      message: "Invalid role selected",
     }),
 
     phone: z

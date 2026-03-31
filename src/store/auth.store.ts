@@ -91,19 +91,22 @@ export const useAuthStore = create<AuthStore>()(
       restoreSession: async () => {
         set({ isLoading: true, error: null })
         try {
-          // In a real implementation, this would verify the session cookie with the server
-          // For now, if user exists in localStorage, session is considered valid
           const state = get()
-          if (state.user) {
-            set({ sessionValid: true })
+          const hasSessionCookie = typeof document !== 'undefined'
+            ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
+            : false
+
+          if (state.user && hasSessionCookie) {
+            set({ sessionValid: true, isAuthenticated: true })
           } else {
-            set({ isAuthenticated: false })
+            set({ user: null, isAuthenticated: false, sessionValid: false })
           }
         } catch (error) {
-          const apiError: ApiError = {
-            error: error instanceof Error ? error.message : 'Session restore failed',
-            code: 'SESSION_RESTORE_ERROR'
-          }
+          const apiError = new ApiError(
+            error instanceof Error ? error.message : 'Session restore failed',
+            'SESSION_RESTORE_ERROR',
+            500
+          )
           set({ error: apiError, isAuthenticated: false })
         } finally {
           set({ isLoading: false })

@@ -197,7 +197,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
 
       {/* Form Container */}
       <div ref={formRef} className="relative min-h-96">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {/* Step 1: Email & Password */}
           {step === 1 && (
             <motion.div

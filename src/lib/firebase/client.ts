@@ -9,7 +9,7 @@
  *   const user = await getUser(auth.currentUser?.uid);
  */
 
-import { initializeApp, getApp, App } from "firebase/app";
+import { initializeApp, getApp, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
   Auth,
@@ -26,15 +26,16 @@ import {
 
 import { FIREBASE_CLIENT_CONFIG } from "@/config/firebase.client.config";
 
-let app: App | null = null;
+let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let firestore: Firestore | null = null;
+let firestoreEmulatorConnected = false;
 
 /**
  * Initialize Firebase App (singleton pattern)
  * @returns Initialized Firebase App instance
  */
-const initializeFirebaseApp = (): App => {
+const initializeFirebaseApp = (): FirebaseApp => {
   try {
     // Check if app is already initialized
     app = getApp();
@@ -105,9 +106,10 @@ const initializeFirestore = async (): Promise<Firestore> => {
   // Connect to emulator in development
   if (
     process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" &&
-    !firestore._persistenceKey
+    !firestoreEmulatorConnected
   ) {
     connectFirestoreEmulator(firestore, "localhost", 8080);
+    firestoreEmulatorConnected = true;
   }
 
   return firestore;

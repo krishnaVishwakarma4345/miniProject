@@ -20,7 +20,11 @@ export default function RegisterPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (authStore.isAuthenticated && authStore.user) {
+    const hasSessionCookie = typeof document !== 'undefined'
+      ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
+      : false
+
+    if (authStore.isAuthenticated && authStore.user && hasSessionCookie) {
       const roleDashboards: Record<string, string> = {
         admin: '/admin/dashboard',
         faculty: '/faculty/dashboard',
@@ -44,7 +48,7 @@ export default function RegisterPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className="space-y-6"
@@ -73,7 +77,7 @@ export default function RegisterPage() {
 
       {/* Login Link */}
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="text-center text-sm text-gray-600"
@@ -86,7 +90,7 @@ export default function RegisterPage() {
 
       {/* Terms */}
       <motion.p
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
         className="text-xs text-gray-500 text-center"

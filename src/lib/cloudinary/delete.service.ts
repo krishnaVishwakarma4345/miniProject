@@ -47,11 +47,12 @@ export const deleteFile = async (
       success: result.result === "ok",
     };
   } catch (error: any) {
-    throw {
-      code: "cloudinary/delete-failed",
-      message: "Failed to delete file from Cloudinary.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to delete file from Cloudinary.",
+      "cloudinary/delete-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -72,11 +73,12 @@ export const deleteFilesInBatch = async (
 
     return results;
   } catch (error: any) {
-    throw {
-      code: "cloudinary/batch-delete-failed",
-      message: "Failed to delete files from Cloudinary.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to delete files from Cloudinary.",
+      "cloudinary/batch-delete-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -102,11 +104,12 @@ export const deleteFolderContents = async (
 
     return result.deleted.length;
   } catch (error: any) {
-    throw {
-      code: "cloudinary/folder-delete-failed",
-      message: "Failed to delete folder contents.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to delete folder contents.",
+      "cloudinary/folder-delete-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -142,11 +145,12 @@ export const getFileMetadata = async (publicId: string): Promise<any> => {
       return null; // File not found
     }
 
-    throw {
-      code: "cloudinary/metadata-failed",
-      message: "Failed to fetch file metadata.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to fetch file metadata.",
+      "cloudinary/metadata-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -164,7 +168,6 @@ export const listFolderFiles = async (
   try {
     const results = await cloudinary.search
       .expression(`folder:${folderPath}`)
-      .resource_type(resourceType)
       .execute();
 
     return results.resources.map((resource: any) => ({
@@ -177,11 +180,12 @@ export const listFolderFiles = async (
       uploadedAt: resource.created_at,
     }));
   } catch (error: any) {
-    throw {
-      code: "cloudinary/list-failed",
-      message: "Failed to list folder files.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to list folder files.",
+      "cloudinary/list-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };
 
@@ -254,10 +258,11 @@ export const cleanupOldFiles = async (
 
     return results.filter((r) => r.success).length;
   } catch (error: any) {
-    throw {
-      code: "cloudinary/cleanup-failed",
-      message: "Failed to cleanup old files.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to cleanup old files.",
+      "cloudinary/cleanup-failed",
+      500,
+      { details: error?.message }
+    );
   }
 };

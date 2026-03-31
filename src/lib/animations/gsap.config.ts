@@ -39,6 +39,7 @@ export const customEases = {
  * Register custom eases
  */
 Object.entries(customEases).forEach(([name, path]) => {
+  if (!path.startsWith('M')) return;
   try {
     CustomEase.create(name, path);
   } catch (e) {
@@ -99,13 +100,11 @@ gsap.defaults({
  * ScrollTrigger configuration
  * Optimize scroll trigger behavior site-wide
  */
-ScrollTrigger.config({
-  autoRefreshEvents: 'visibilitychange,domContentLoaded,load',
-  batch: {
-    interval: 100, // Group ScrollTrigger refreshes
-    delay: 0,
-  },
-});
+if (typeof window !== 'undefined' && typeof ScrollTrigger.config === 'function') {
+  ScrollTrigger.config({
+    autoRefreshEvents: 'visibilitychange,domContentLoaded,load',
+  });
+}
 
 /**
  * Disable GSAP animations if user prefers reduced motion

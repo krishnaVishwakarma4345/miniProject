@@ -110,6 +110,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Only enforce auth for protected role route groups.
+  // This prevents typos like /reester from being redirected to /login,
+  // allowing Next.js to return a proper 404 page instead.
+  const routeBase = getRouteBase(pathname);
+  const isProtectedRoleRoute = !!(routeBase && ROLE_ROUTES[routeBase]);
+  if (!isProtectedRoleRoute) {
+    return NextResponse.next();
+  }
+
   // Verify session for protected routes
   const session = await verifySessionCookie(request);
 
@@ -122,9 +131,6 @@ export async function proxy(request: NextRequest) {
 
   // Extract role from session
   const userRole = session.role;
-
-  // Get route base from pathname
-  const routeBase = getRouteBase(pathname);
 
   // Check if user has permission for this route
   if (routeBase && ROLE_ROUTES[routeBase]) {

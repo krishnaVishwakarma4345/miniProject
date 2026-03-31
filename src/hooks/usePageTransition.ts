@@ -47,50 +47,51 @@ export const usePageTransition = (
 
     const container = containerRef.current;
 
-    // Define animations based on type
-    let animationProps: gsap.TweenVars = {};
+    // Define GSAP-compatible start/end values
+    let fromProps: gsap.TweenVars = { opacity: 0 };
+    let toProps: gsap.TweenVars = { opacity: 1 };
 
     switch (type) {
       case 'fade':
-        animationProps = {
-          opacity: [0, 1],
-        };
+      fromProps = { opacity: 0 };
+      toProps = { opacity: 1 };
         break;
 
       case 'slide':
-        const slideDistance = direction === 'left' ? 100 : -100;
-        animationProps = {
-          x: [direction === 'left' ? slideDistance : -slideDistance, 0],
-          opacity: [0, 1],
-        };
+      if (direction === 'up' || direction === 'down') {
+        const offsetY = direction === 'up' ? 40 : -40;
+        fromProps = { y: offsetY, opacity: 0 };
+        toProps = { y: 0, opacity: 1 };
+      } else {
+        const offsetX = direction === 'left' ? 40 : -40;
+        fromProps = { x: offsetX, opacity: 0 };
+        toProps = { x: 0, opacity: 1 };
+      }
         break;
 
       case 'zoom':
-        animationProps = {
-          scale: [0.95, 1],
-          opacity: [0, 1],
-        };
+      fromProps = { scale: 0.95, opacity: 0 };
+      toProps = { scale: 1, opacity: 1 };
         break;
 
       case 'clip':
-        animationProps = {
-          clipPath: [
-            'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-            'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-          ],
-          opacity: [0, 1],
-        };
+      fromProps = {
+        clipPath: 'polygon(0 0, 0 0, 0 100%, 0 100%)',
+        opacity: 0,
+      };
+      toProps = {
+        clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
+        opacity: 1,
+      };
         break;
 
       default:
-        animationProps = { opacity: [0, 1] };
+      fromProps = { opacity: 0 };
+      toProps = { opacity: 1 };
     }
 
     // Reset position before animation
-    gsap.set(container, {
-      x: direction === 'left' ? 100 : -100,
-      opacity: 0,
-    });
+    gsap.set(container, fromProps);
 
     // Create timeline animation
     tlRef.current = gsap.timeline({
@@ -101,7 +102,7 @@ export const usePageTransition = (
     });
 
     tlRef.current.to(container, {
-      ...animationProps,
+      ...toProps,
       duration,
       ease: 'power2.out',
     });

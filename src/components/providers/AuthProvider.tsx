@@ -20,6 +20,11 @@ interface AuthProviderProps {
  */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
+    if (!auth) {
+      console.warn('AuthProvider skipped: Firebase Auth is unavailable. Check NEXT_PUBLIC_FIREBASE_* values.');
+      return;
+    }
+
     /**
      * Set up real-time auth state listener
      * This will sync with Zustand store once it's created

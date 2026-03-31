@@ -73,15 +73,16 @@ export const getCategoryFolder = (
   parentId: string
 ): string => {
   const categoryMap: Record<ActivityCategory, string> = {
-    academic: "academic_activities",
-    cultural: "cultural_activities",
-    sports: "sports_activities",
-    research: "research_activities",
-    social: "social_activities",
-    internship: "internships",
-    workshop: "workshops",
-    leadership: "leadership",
-    other: "other_activities",
+    [ActivityCategory.SPORTS]: "sports_activities",
+    [ActivityCategory.TECH]: "tech_activities",
+    [ActivityCategory.CULTURAL]: "cultural_activities",
+    [ActivityCategory.COMMUNITY_SERVICE]: "community_service_activities",
+    [ActivityCategory.ACADEMIC]: "academic_activities",
+    [ActivityCategory.LEADERSHIP]: "leadership_activities",
+    [ActivityCategory.ENTREPRENEURSHIP]: "entrepreneurship_activities",
+    [ActivityCategory.VOLUNTEER]: "volunteer_activities",
+    [ActivityCategory.RESEARCH]: "research_activities",
+    [ActivityCategory.ARTS_MUSIC]: "arts_music_activities",
   };
 
   return `${categoryMap[category]}/by_student/${parentId}`;
