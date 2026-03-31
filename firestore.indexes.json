@@ -1,0 +1,295 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "users",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "role",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "isActive",
+          "order": "Ascending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "role",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "isActive",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "department",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "status",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Ascending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "category",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "status",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "status",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "recipientId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "recipientId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "recipientId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "isRead",
+          "order": "Ascending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "recipientId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "isRead",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "audit_logs",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "audit_logs",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "action",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "range",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reports",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "institutionId",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "format",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "Descending"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { Activity, ActivityCategory, ActivityCreateRequest, ActivityStatus, ActivityType, ApiResponse } from '@/types'
+import { createActivity } from '@/lib/firebase/firestore/activities.repository'
+import { getUserById } from '@/lib/firebase/firestore/users.repository'
+import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
+import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
+
+export async function POST(request: NextRequest) {
+	try {
+		const session = parseSessionCookie(request.headers)
+		if (!session) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Unauthorized', timestamp: Date.now(), statusCode: 401 }, { status: 401 })
+		}
+
+		const decoded = await verifySessionCookie(session, true)
+		const body = (await request.json()) as ActivityCreateRequest
+		const userRecord = await getUserById(decoded.uid)
+		const institutionId = (userRecord as any)?.institutionId as string | undefined
+
+		if (!institutionId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		const submitterName =
+			(userRecord as any)?.displayName ??
+			(userRecord as any)?.fullName ??
+			(decoded.name as string) ??
+			'Student'
+
+		const now = Date.now()
+		const normalizedProofFiles = (body.proofFiles || []).map((file, index) => ({
+			...file,
+			order: file.order ?? index,
+			uploadedAt: file.uploadedAt ?? now,
+		}))
+
+		const document: Omit<Activity, 'id'> = {
+			institutionId,
+			studentId: decoded.uid,
+			submittedBy: decoded.uid,
+			submittedByName: submitterName,
+			title: body.title,
+			description: body.description,
+			category: body.category as ActivityCategory,
+			type: body.type as ActivityType,
+			activityDate: body.activityDate,
+			location: body.location,
+			organization: body.organization,
+			durationHours: body.durationHours,
+			certificatesAwards: body.certificatesAwards,
+			status: ActivityStatus.SUBMITTED,
+			proofFiles: normalizedProofFiles,
+			isFeatured: false,
+			tags: body.tags || [],
+			createdAt: now,
+			updatedAt: now,
+			submittedAt: now,
+		}
+
+		const id = await createActivity(document)
+
+		return NextResponse.json<ApiResponse<{ id: string }>>({
+			success: true,
+			data: { id },
+			message: 'Activity created successfully',
+			timestamp: Date.now(),
+			statusCode: 201,
+		}, { status: 201 })
+	} catch (error) {
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			data: null,
+			message: error instanceof Error ? error.message : 'Failed to create activity',
+			timestamp: Date.now(),
+			statusCode: 500,
+		}, { status: 500 })
+	}
+}

@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasClaim(claim) {
+      return isSignedIn() && claim in request.auth.token && request.auth.token[claim] == true;
+    }
+
+    function isAdmin() {
+      return hasClaim('admin');
+    }
+
+    function isFaculty() {
+      return hasClaim('faculty');
+    }
+
+    function isStudent() {
+      return hasClaim('student');
+    }
+
+    function isOwner(id) {
+      return isSignedIn() && request.auth.uid == id;
+    }
+
+    function sameInstitution(institutionId) {
+      return isSignedIn() && request.auth.token.institutionId == institutionId;
+    }
+
+    function requestInstitution() {
+      return request.resource.data.institutionId;
+    }
+
+    function resourceInstitution() {
+      return resource.data.institutionId;
+    }
+
+    function preventsPrivilegeEscalation() {
+      return !('role' in request.resource.data) && !('institutionId' in request.resource.data);
+    }
+
+    // USERS -----------------------------------------------------
+    match /users/{userId} {
+      allow read: if isOwner(userId)
+        || (isAdmin() && sameInstitution(resourceInstitution()))
+        || (isFaculty() && sameInstitution(resourceInstitution()) && resource.data.role == 'student');
+
+      allow create: if isAdmin()
+        && sameInstitution(requestInstitution())
+        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'status', 'institutionId', 'createdAt', 'updatedAt', 'metadata']);
+
+      allow update: if (isOwner(userId) && preventsPrivilegeEscalation())
+        || (isAdmin() && sameInstitution(resourceInstitution()));
+
+      allow delete: if isAdmin() && sameInstitution(resourceInstitution());
+    }
+
+    // ACTIVITIES ------------------------------------------------
+    match /activities/{activityId} {
+      allow read: if (isStudent() && isOwner(resource.data.studentId))
+        || (isFaculty() && sameInstitution(resourceInstitution()))
+        || isAdmin();
+
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid
+        && sameInstitution(requestInstitution())
+        && request.resource.data.status == 'draft';
+
+      allow update: if (isStudent() && isOwner(resource.data.studentId) && request.resource.data.status == resource.data.status)
+        || (isFaculty() && sameInstitution(resourceInstitution()) && request.resource.data.keys().hasAny(['status', 'remarks', 'reviewedAt']))
+        || (isAdmin() && sameInstitution(resourceInstitution()));
+
+      allow delete: if (isStudent() && isOwner(resource.data.studentId) && resource.data.status == 'draft') || isAdmin();
+    }
+
+    // PORTFOLIOS -----------------------------------------------
+    match /portfolios/{portfolioId} {
+      allow read: if isOwner(portfolioId) || isAdmin() || (isFaculty() && sameInstitution(resourceInstitution()));
+      allow write: if isOwner(portfolioId) || isAdmin();
+    }
+
+    // REPORTS ---------------------------------------------------
+    match /reports/{reportId} {
+      allow read: if isAdmin() && sameInstitution(resourceInstitution());
+      allow create, update: if isAdmin() && sameInstitution(requestInstitution());
+      allow delete: if isAdmin();
+    }
+
+    // NOTIFICATIONS --------------------------------------------
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && isOwner(resource.data.recipientId);
+      allow create: if isAdmin();
+      allow update: if isSignedIn() && isOwner(resource.data.recipientId) && request.resource.data.keys().hasOnly(['isRead', 'readAt']);
+      allow delete: if isSignedIn() && isOwner(resource.data.recipientId) || isAdmin();
+    }
+
+    // AUDIT + ARCHIVE (read-only) ------------------------------
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /archive/{document=**} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // BACKUPS ---------------------------------------------------
+    match /backups/{backup=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
