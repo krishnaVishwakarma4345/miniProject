@@ -15,7 +15,7 @@ import {
 } from "firebase/auth";
 import { getAuthInstance, getFirestoreInstance } from "../client";
 import { setUser } from "./../../firebase/firestore/users.repository";
-import { UserRole, User } from "@/types/user.types";
+import { UserRole, User, UserStatus } from "@/types/user.types";
 import { ApiError } from "@/types/api.types";
 
 /**
@@ -28,7 +28,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   "auth/operation-not-allowed": "User registration is not available.",
   "auth/popup-closed-by-user": "Google sign-up was cancelled.",
   "auth/popup-blocked": "Pop-up was blocked. Please allow popups and try again.",
-  "auth/operation-not-allowed": "Google sign-up is not available.",
 };
 
 /**
@@ -64,11 +63,17 @@ export const registerWithEmail = async (
         displayName,
       });
 
-      // Create user document in Firestore
+      // Attempt to create user profile document. If Firestore client is unavailable,
+      // keep auth registration successful and let profile bootstrap happen later.
       const newUser: Omit<User, "id"> = {
+        uid: userCredential.user.uid,
+        fullName: displayName,
         email,
         displayName,
         role,
+        status: UserStatus.ACTIVE,
+        language: "en",
+        mfaEnabled: false,
         institutionId,
         photoURL: null,
         createdAt: new Date(),
@@ -82,21 +87,28 @@ export const registerWithEmail = async (
         },
       };
 
-      await setUser(userCredential.user.uid, newUser);
+      try {
+        await setUser(userCredential.user.uid, newUser);
+      } catch (profileError) {
+        console.warn("User auth created, but profile document creation failed.", profileError);
+      }
     }
 
     return userCredential;
   } catch (error) {
-    const authError = error as AuthError;
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    const authError = error as Partial<AuthError>;
     const message =
-      ERROR_MESSAGES[authError.code] ||
+      (authError.code ? ERROR_MESSAGES[authError.code] : undefined) ||
+      (error instanceof Error ? error.message : undefined) ||
       "Failed to create account. Please try again.";
 
-    throw {
-      code: authError.code,
-      message,
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(message, authError.code || "REGISTER_ERROR", 400, {
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 
@@ -126,9 +138,14 @@ export const registerWithGoogle = async (
     // Create user document in Firestore if new user
     if (userCredential.user) {
       const newUser: Omit<User, "id"> = {
+        uid: userCredential.user.uid,
+        fullName: userCredential.user.displayName || "",
         email: userCredential.user.email || "",
         displayName: userCredential.user.displayName || "",
         role,
+        status: UserStatus.ACTIVE,
+        language: "en",
+        mfaEnabled: false,
         institutionId,
         photoURL: userCredential.user.photoURL || null,
         createdAt: new Date(),
@@ -142,21 +159,28 @@ export const registerWithGoogle = async (
         },
       };
 
-      await setUser(userCredential.user.uid, newUser);
+      try {
+        await setUser(userCredential.user.uid, newUser);
+      } catch (profileError) {
+        console.warn("Google auth created, but profile document creation failed.", profileError);
+      }
     }
 
     return userCredential;
   } catch (error) {
-    const authError = error as AuthError;
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    const authError = error as Partial<AuthError>;
     const message =
-      ERROR_MESSAGES[authError.code] ||
+      (authError.code ? ERROR_MESSAGES[authError.code] : undefined) ||
+      (error instanceof Error ? error.message : undefined) ||
       "Failed to sign up with Google. Please try again.";
 
-    throw {
-      code: authError.code,
-      message,
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(message, authError.code || "GOOGLE_REGISTER_ERROR", 400, {
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 

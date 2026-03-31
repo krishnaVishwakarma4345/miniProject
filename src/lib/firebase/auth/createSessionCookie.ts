@@ -51,11 +51,12 @@ export const createSessionCookie = async (
   } catch (error: any) {
     const message = getErrorMessage(error.code);
 
-    throw {
-      code: error.code || "auth/session-creation-failed",
+    throw new ApiError(
       message,
-      originalError: error,
-    } as ApiError;
+      error?.code || "auth/session-creation-failed",
+      401,
+      { details: error instanceof Error ? error.message : String(error) }
+    );
   }
 };
 

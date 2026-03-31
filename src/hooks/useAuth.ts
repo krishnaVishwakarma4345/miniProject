@@ -182,7 +182,16 @@ export function useAuth(): UseAuthReturn {
       const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({
+          idToken,
+          userProfile: {
+            fullName: userCredential.user.displayName || 'User',
+            displayName: userCredential.user.displayName || 'User',
+            role: UserRole.STUDENT,
+            institutionId: '',
+            signUpMethod: 'google',
+          },
+        })
       })
 
       if (!response.ok) {
@@ -270,7 +279,16 @@ export function useAuth(): UseAuthReturn {
       const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({
+          idToken,
+          userProfile: {
+            fullName: displayName,
+            displayName,
+            role,
+            institutionId,
+            signUpMethod: 'email',
+          },
+        })
       })
 
       if (!response.ok) {
@@ -312,8 +330,15 @@ export function useAuth(): UseAuthReturn {
         duration: 3000
       })
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message ?? 'Registration failed')
+            : 'Registration failed'
+
       const apiError = error instanceof ApiError ? error : new ApiError(
-        error instanceof Error ? error.message : 'Registration failed',
+        errorMessage,
         'REGISTER_ERROR'
       )
       authStore.setError(apiError)
@@ -345,7 +370,16 @@ export function useAuth(): UseAuthReturn {
       const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({
+          idToken,
+          userProfile: {
+            fullName: userCredential.user.displayName || 'User',
+            displayName: userCredential.user.displayName || 'User',
+            role: UserRole.STUDENT,
+            institutionId: '',
+            signUpMethod: 'google',
+          },
+        })
       })
 
       if (!response.ok) {

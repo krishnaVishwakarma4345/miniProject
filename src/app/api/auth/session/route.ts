@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyIdToken } from '@/lib/firebase/auth/verifySessionCookie'
 import { createSessionCookie, generateSetCookieHeader } from '@/lib/firebase/auth/createSessionCookie'
+import { getAdminFirestore } from '@/lib/firebase/admin'
 import { ApiError } from '@/types/api.types'
+import { UserRole, UserStatus } from '@/types/user.types'
+
+interface SessionProfilePayload {
+  fullName?: string
+  displayName?: string
+  role?: string
+  institutionId?: string
+  signUpMethod?: string
+}
 
 /**
  * POST /api/auth/session
@@ -14,7 +24,7 @@ import { ApiError } from '@/types/api.types'
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json()
-    const { idToken } = body
+    const { idToken, userProfile } = body as { idToken?: string; userProfile?: SessionProfilePayload }
 
     if (!idToken || typeof idToken !== 'string') {
       const apiError = new ApiError('Invalid or missing idToken', 'INVALID_TOKEN', 400)
@@ -26,13 +36,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Extract user info from token
     const userId = decodedToken.uid
-    const userRole = decodedToken.custom_claims?.role || 'student'
+    const roleFromProfile = userProfile?.role
+    const roleFromClaims = decodedToken.custom_claims?.role
+    const requestedRole = roleFromProfile || roleFromClaims || UserRole.STUDENT
+    const userRole = Object.values(UserRole).includes(requestedRole as UserRole)
+      ? (requestedRole as UserRole)
+      : UserRole.STUDENT
     const userEmail = decodedToken.email
 
     if (!userEmail) {
       const apiError = new ApiError('Token missing email claim', 'MISSING_EMAIL', 400)
       return NextResponse.json(apiError, { status: apiError.statusCode ?? 400 })
     }
+
+    // Ensure Firestore profile document exists for every authenticated user.
+    const adminDb = getAdminFirestore()
+    const userRef = adminDb.collection('users').doc(userId)
+    const existingUser = await userRef.get()
+    const derivedName = userProfile?.fullName || userProfile?.displayName || decodedToken.name || userEmail.split('@')[0]
+
+    await userRef.set(
+      {
+        uid: userId,
+        id: userId,
+        fullName: derivedName,
+        displayName: userProfile?.displayName || decodedToken.name || derivedName,
+        email: userEmail,
+        role: userRole,
+        status: UserStatus.ACTIVE,
+        language: 'en',
+        mfaEnabled: false,
+        institutionId: userProfile?.institutionId || null,
+        photoURL: decodedToken.picture || null,
+        isActive: true,
+        emailVerified: Boolean(decodedToken.email_verified),
+        lastLogin: new Date(),
+        updatedAt: new Date(),
+        ...(existingUser.exists
+          ? {}
+          : {
+              createdAt: new Date(),
+              metadata: {
+                signUpMethod: userProfile?.signUpMethod || 'email',
+                loginCount: 1,
+              },
+            }),
+      },
+      { merge: true }
+    )
 
     // Create session cookie (valid for 5 days by default)
     const sessionCookie = await createSessionCookie(idToken)
