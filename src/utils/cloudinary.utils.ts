@@ -5,8 +5,6 @@
  * Integrates with Cloudinary CDN for optimized media delivery.
  */
 
-import { getEnv } from "@/config/env";
-
 /**
  * Cloudinary transformation presets
  * Used for consistent image transformations across the app
@@ -55,10 +53,18 @@ export function buildCloudinaryUrl(
     dpr?: string;
   } = {}
 ): string {
-  const cloudName = getEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+  if (!publicId) {
+    return "";
+  }
+
+  if (publicId.startsWith("http://") || publicId.startsWith("https://")) {
+    return publicId;
+  }
+
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
 
   if (!cloudName) {
-    throw new Error("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not configured");
+    return "";
   }
 
   // Build transformation string
@@ -159,7 +165,7 @@ export async function getImageMetadata(
   aspectRatio: number;
   publicId: string;
 }> {
-  const cloudName = getEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
 
   if (!cloudName) {
     throw new Error("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not configured");
@@ -399,6 +405,6 @@ export const VIDEO_TRANSFORMS = {
  * @returns true if URL is from Cloudinary
  */
 export function isCloudinaryUrl(url: string): boolean {
-  const cloudName = getEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
   return url.includes(`res.cloudinary.com/${cloudName}`);
 }

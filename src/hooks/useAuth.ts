@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { signInWithEmail, signInWithGoogle } from '@/lib/firebase/auth/signIn'
-import { signOut as firebaseSignOut, signOutAndRedirect } from '@/lib/firebase/auth/signOut'
+import { signOut as firebaseSignOut } from '@/lib/firebase/auth/signOut'
 import { registerWithEmail, registerWithGoogle } from '@/lib/firebase/auth/createUser'
 import { getAuthInstance } from '@/lib/firebase/client'
 import { useAuthStore } from '@/store/auth.store'
@@ -437,16 +437,10 @@ export function useAuth(): UseAuthReturn {
     authStore.setIsLoading(true)
 
     try {
-      // Step 1: Clear session cookie on server
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      // Step 2: Sign out from Firebase
+      // Sign out service clears session cookie and Firebase auth state.
       await firebaseSignOut()
 
-      // Step 3: Clear Zustand auth store
+      // Clear local auth state and force navigation to login.
       authStore.clearSession()
 
       uiStore.addToast({
@@ -455,10 +449,17 @@ export function useAuth(): UseAuthReturn {
         message: 'See you soon!',
         duration: 2000
       })
+
+      if (typeof window !== 'undefined') {
+        window.location.replace('/login')
+      }
     } catch (error) {
       console.error('Logout error:', error)
-      // Still clear local state even if server logout fails
+      // Still clear local state and navigate even if server logout fails.
       authStore.clearSession()
+      if (typeof window !== 'undefined') {
+        window.location.replace('/login')
+      }
     } finally {
       authStore.setIsLoading(false)
     }

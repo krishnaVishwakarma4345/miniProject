@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Activity, ActivityCategory, ActivityCreateRequest, ActivityStatus, ActivityType, ApiResponse } from '@/types'
 import { createActivity } from '@/lib/firebase/firestore/activities.repository'
-import { getUserById } from '@/lib/firebase/firestore/users.repository'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
+import { getAdminFirestore } from '@/lib/firebase/admin'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -14,16 +14,19 @@ export async function POST(request: NextRequest) {
 
 		const decoded = await verifySessionCookie(session, true)
 		const body = (await request.json()) as ActivityCreateRequest
-		const userRecord = await getUserById(decoded.uid)
-		const institutionId = (userRecord as any)?.institutionId as string | undefined
+
+		const adminDb = getAdminFirestore()
+		const userSnapshot = await adminDb.collection('users').doc(decoded.uid).get()
+		const userRecord = userSnapshot.exists ? (userSnapshot.data() as { institutionId?: string; displayName?: string; fullName?: string }) : null
+		const institutionId = userRecord?.institutionId
 
 		if (!institutionId) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		const submitterName =
-			(userRecord as any)?.displayName ??
-			(userRecord as any)?.fullName ??
+			userRecord?.displayName ??
+			userRecord?.fullName ??
 			(decoded.name as string) ??
 			'Student'
 

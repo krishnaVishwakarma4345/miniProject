@@ -48,11 +48,22 @@ export const generateUploadSignature = async (
   request: UploadSignatureRequest
 ): Promise<UploadSignatureResponse> => {
   try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new ApiError(
+        "Cloudinary is not configured. Missing CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, or NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME.",
+        "cloudinary/config-missing",
+        500
+      );
+    }
+
     const timestamp = Math.floor(Date.now() / 1000);
 
     const paramsToSign = {
       folder: request.folder,
-      resource_type: request.resourceType || "auto",
       timestamp,
       ...(request.maxFileSize && { max_file_size: request.maxFileSize }),
       ...(request.allowedFormats && {
@@ -62,19 +73,23 @@ export const generateUploadSignature = async (
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
-      process.env.CLOUDINARY_API_SECRET || ""
+      apiSecret
     );
 
     return {
       signature,
       timestamp,
-      cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
+      cloudName,
       uploadEndpoint: "https://api.cloudinary.com/v1_1",
       folder: request.folder,
       resourceType: request.resourceType,
-      apiKey: process.env.CLOUDINARY_API_KEY,
+      apiKey,
     };
   } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
     throw new ApiError(
       "Failed to generate upload signature.",
       "cloudinary/signature-failed",

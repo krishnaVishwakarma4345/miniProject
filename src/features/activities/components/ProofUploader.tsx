@@ -89,11 +89,12 @@ export function ProofUploader({ value, onChange, maxFiles = 6, className = '' }:
 			formData.append('signature', data.signature)
 			formData.append('timestamp', String(data.timestamp))
 			formData.append('folder', data.folder)
+			formData.append('resource_type', data.resourceType || 'auto')
 			if (data.apiKey) {
 				formData.append('api_key', data.apiKey)
 			}
 
-			const response = await new Promise<Response>((resolve, reject) => {
+			const uploadResult = await new Promise<Record<string, any>>((resolve, reject) => {
 				const request = new XMLHttpRequest()
 				request.open('POST', uploadUrl)
 				request.upload.onprogress = (event) => {
@@ -103,10 +104,13 @@ export function ProofUploader({ value, onChange, maxFiles = 6, className = '' }:
 				}
 				request.onload = () => {
 					if (request.status >= 200 && request.status < 300) {
-						const blob = new Blob([request.response], { type: 'application/json' })
-						resolve(new Response(blob))
+						resolve(request.response as Record<string, any>)
 					} else {
-						reject(new Error('Upload failed'))
+						const errorMessage =
+							request.response?.error?.message ||
+							request.response?.message ||
+							'Upload failed'
+						reject(new Error(errorMessage))
 					}
 				}
 				request.onerror = () => reject(new Error('Upload failed'))
@@ -114,7 +118,6 @@ export function ProofUploader({ value, onChange, maxFiles = 6, className = '' }:
 				request.send(formData)
 			})
 
-			const uploadResult = await response.json()
 			const proof: ProofFile = {
 				id: uploadResult.public_id,
 				name: file.name,
@@ -212,7 +215,7 @@ export function ProofUploader({ value, onChange, maxFiles = 6, className = '' }:
 
 function FileThumbnail({ file }: { file: ProofFile }) {
 	if (file.type === 'image') {
-		const preview = buildCloudinaryUrl(file.id || file.name, 'c_fill,w_80,h_80,q_auto,f_auto')
+		const preview = file.secureUrl || file.url || buildCloudinaryUrl(file.id || file.name, 'c_fill,w_80,h_80,q_auto,f_auto')
 		return <img src={preview} alt={file.name} className='h-14 w-14 rounded-xl object-cover shadow-sm' />
 	}
 	return (
