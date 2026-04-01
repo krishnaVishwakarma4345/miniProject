@@ -1,15 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Activity, ActivityStatus, ApiResponse } from '@/types'
-import { getActivityById, updateActivity } from '@/lib/firebase/firestore/activities.repository'
-import { getUserById } from '@/lib/firebase/firestore/users.repository'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
+import { getAdminFirestore } from '@/lib/firebase/admin'
+import { UserRole } from '@/types/user.types'
+import { getInstitutionActivityDoc } from '@/lib/firebase/firestore/activity-tenant.utils'
 
 interface ApproveBody {
 	activityId: string
 	remarks?: string
 	pointsAwarded?: number
 	score?: number
+}
+
+interface UserProfile {
+	uid?: string
+	role?: string
+	institutionId?: string
+	displayName?: string
+	fullName?: string
+}
+
+const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
+	const userDoc = await adminDb.collection('users').doc(uid).get()
+	if (userDoc.exists) {
+		return userDoc.data() as UserProfile
+	}
+
+	const scoped = await adminDb
+		.collectionGroup('users')
+		.where('uid', '==', uid)
+		.limit(1)
+		.get()
+
+	if (scoped.empty) {
+		return null
+	}
+
+	return scoped.docs[0].data() as UserProfile
 }
 
 export async function POST(request: NextRequest) {
@@ -20,11 +48,16 @@ export async function POST(request: NextRequest) {
 		}
 
 		const decoded = await verifySessionCookie(session, true)
-		const facultyProfile = await getUserById(decoded.uid)
-		const role = ((decoded as any)?.role as string) || (facultyProfile as any)?.role
+		const adminDb = getAdminFirestore()
+		const reviewerProfile = await resolveUserProfile(decoded.uid, adminDb)
+		const role = reviewerProfile?.role || (decoded.custom_claims?.role as string | undefined) || UserRole.STUDENT
 
-		if (role && role !== 'faculty' && role !== 'admin') {
+		if (role !== UserRole.FACULTY && role !== UserRole.ADMIN) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		if (!reviewerProfile?.institutionId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		const body = (await request.json()) as ApproveBody
@@ -32,36 +65,59 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'activityId is required', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
 		}
 
-		const activity = await getActivityById(body.activityId)
-		if (!activity) {
+		const activityDoc = await adminDb.collection('activities').doc(body.activityId).get()
+		if (!activityDoc.exists) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Activity not found', timestamp: Date.now(), statusCode: 404 }, { status: 404 })
 		}
 
+		const activity = { id: activityDoc.id, ...activityDoc.data() } as Activity
+
+		if (activity.institutionId !== reviewerProfile.institutionId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You can only review activities from your institution', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
 		const reviewerName =
-			(facultyProfile as any)?.displayName ??
-			(facultyProfile as any)?.fullName ??
+			reviewerProfile.displayName ??
+			reviewerProfile.fullName ??
 			(decoded.name as string) ??
 			'Faculty Reviewer'
 
 		const now = Date.now()
+		const resolvedPoints = body.pointsAwarded ?? activity.pointsAwarded ?? 0
+		const reviewPayload: Activity['review'] = {
+			reviewedBy: decoded.uid,
+			reviewerName,
+			remarks: body.remarks || 'Approved',
+			reviewedAt: now,
+			pointsAwarded: resolvedPoints,
+		}
 
-		await updateActivity(body.activityId, {
+		if (typeof body.score === 'number' && Number.isFinite(body.score)) {
+			reviewPayload.score = body.score
+		}
+
+		await adminDb.collection('activities').doc(body.activityId).set({
 			status: ActivityStatus.APPROVED,
-			review: {
-				reviewedBy: decoded.uid,
-				reviewerName,
-				remarks: body.remarks || 'Approved',
-				reviewedAt: now,
-				score: body.score,
-				pointsAwarded: body.pointsAwarded ?? activity.pointsAwarded ?? 0,
-			},
-			pointsAwarded: body.pointsAwarded ?? activity.pointsAwarded ?? 0,
+			review: reviewPayload,
+			pointsAwarded: resolvedPoints,
 			assignedTo: decoded.uid,
 			assignedToName: reviewerName,
 			reviewedAt: now,
-		})
+			updatedAt: now,
+		}, { merge: true })
+		await getInstitutionActivityDoc(adminDb, reviewerProfile.institutionId, body.activityId).set({
+			id: body.activityId,
+			status: ActivityStatus.APPROVED,
+			review: reviewPayload,
+			pointsAwarded: resolvedPoints,
+			assignedTo: decoded.uid,
+			assignedToName: reviewerName,
+			reviewedAt: now,
+			updatedAt: now,
+		}, { merge: true })
 
-		const updated = await getActivityById(body.activityId)
+		const updatedDoc = await adminDb.collection('activities').doc(body.activityId).get()
+		const updated = updatedDoc.exists ? ({ id: updatedDoc.id, ...updatedDoc.data() } as Activity) : null
 
 		return NextResponse.json<ApiResponse<Activity | null>>({
 			success: true,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyIdToken } from '@/lib/firebase/auth/verifySessionCookie'
 import { createSessionCookie, generateSetCookieHeader } from '@/lib/firebase/auth/createSessionCookie'
-import { getAdminFirestore } from '@/lib/firebase/admin'
+import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/admin'
 import { ApiError } from '@/types/api.types'
 import { UserRole, UserStatus } from '@/types/user.types'
 
@@ -13,11 +13,33 @@ interface SessionProfilePayload {
   signUpMethod?: string
 }
 
+const MASTER_ADMIN_BOOTSTRAP_EMAILS = new Set([
+  'krishnavishwakarma4345@gmail.com',
+])
+
+type ProfileRecord = {
+  role?: string
+  institutionId?: string
+  fullName?: string
+  displayName?: string
+}
+
+const extractInstitutionFromPath = (path: string): string | undefined => {
+  const parts = path.split('/')
+  const institutionsIndex = parts.indexOf('institutions')
+  if (institutionsIndex === -1) return undefined
+  return parts[institutionsIndex + 1]
+}
+
+const normalizeRole = (value: unknown): UserRole | null => {
+  if (typeof value !== 'string') return null
+  return Object.values(UserRole).includes(value as UserRole) ? (value as UserRole) : null
+}
+
 /**
  * POST /api/auth/session
  * Creates a secure session cookie from Firebase ID token
  * Client calls this after successful Firebase auth (signIn/signUp)
- * 
  * Request body: { idToken: string }
  * Response: { success: true, userId: string, role: UserRole } with Set-Cookie header
  */
@@ -37,9 +59,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Extract user info from token
     const userId = decodedToken.uid
     const roleFromProfile = userProfile?.role
-    const roleFromClaims = decodedToken.custom_claims?.role
-    const requestedRole = roleFromProfile || roleFromClaims || UserRole.STUDENT
+    const roleFromTokenClaims = (decodedToken.role as string | undefined) || (decodedToken.custom_claims?.role as string | undefined)
+    const institutionFromTokenClaims = (decodedToken.institutionId as string | undefined) || (decodedToken.org as string | undefined) || (decodedToken.custom_claims?.institutionId as string | undefined) || (decodedToken.custom_claims?.org as string | undefined)
     const userEmail = decodedToken.email
+    const normalizedEmail = userEmail?.trim().toLowerCase()
+    const isBootstrapMasterAdmin = Boolean(normalizedEmail && MASTER_ADMIN_BOOTSTRAP_EMAILS.has(normalizedEmail))
 
     if (!userEmail) {
       const apiError = new ApiError('Token missing email claim', 'MISSING_EMAIL', 400)
@@ -48,17 +72,67 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Ensure Firestore profile document exists for every authenticated user.
     const adminDb = getAdminFirestore()
+    const adminAuth = getAdminAuth()
+    const authUserRecord = await adminAuth.getUser(userId)
+    const roleFromAuthClaims = authUserRecord.customClaims?.role as string | undefined
+    const institutionFromAuthClaims = (authUserRecord.customClaims?.institutionId as string | undefined) || (authUserRecord.customClaims?.org as string | undefined)
+
     const userRef = adminDb.collection('users').doc(userId)
     const existingUser = await userRef.get()
-    const existingRole = existingUser.exists ? existingUser.data()?.role : undefined
-    const existingInstitutionId = existingUser.exists ? existingUser.data()?.institutionId : undefined
-    const resolvedRoleSource = existingRole || requestedRole
-    const userRole = Object.values(UserRole).includes(resolvedRoleSource as UserRole)
-      ? (resolvedRoleSource as UserRole)
-      : UserRole.STUDENT
-    const resolvedInstitutionId = existingInstitutionId || userProfile?.institutionId || null
+    const existingData = existingUser.exists ? (existingUser.data() as ProfileRecord) : null
 
-    if (userRole !== UserRole.MASTER_ADMIN) {
+    let scopedUserData: ProfileRecord | null = null
+    let scopedInstitutionId: string | undefined
+    try {
+      const scopedByUid = await adminDb
+        .collectionGroup('users')
+        .where('uid', '==', userId)
+        .limit(1)
+        .get()
+
+      if (!scopedByUid.empty) {
+        scopedUserData = scopedByUid.docs[0].data() as ProfileRecord
+        scopedInstitutionId = scopedUserData.institutionId || extractInstitutionFromPath(scopedByUid.docs[0].ref.path)
+      }
+    } catch {
+      // Ignore collection group issues and continue with available sources.
+    }
+
+    if (!scopedUserData && normalizedEmail) {
+      try {
+        const scopedByEmail = await adminDb
+          .collectionGroup('users')
+          .where('email', '==', normalizedEmail)
+          .limit(1)
+          .get()
+
+        if (!scopedByEmail.empty) {
+          scopedUserData = scopedByEmail.docs[0].data() as ProfileRecord
+          scopedInstitutionId = scopedUserData.institutionId || extractInstitutionFromPath(scopedByEmail.docs[0].ref.path)
+        }
+      } catch {
+        // Ignore collection group issues and continue with available sources.
+      }
+    }
+
+    const resolvedRole = isBootstrapMasterAdmin
+      ? UserRole.MASTER_ADMIN
+      : normalizeRole(scopedUserData?.role)
+        || normalizeRole(existingData?.role)
+        || normalizeRole(roleFromAuthClaims)
+        || normalizeRole(roleFromTokenClaims)
+        || normalizeRole(roleFromProfile)
+        || UserRole.STUDENT
+
+    const resolvedInstitutionId =
+      existingData?.institutionId
+      || scopedInstitutionId
+      || institutionFromAuthClaims
+      || institutionFromTokenClaims
+      || userProfile?.institutionId
+      || null
+
+    if (resolvedRole !== UserRole.MASTER_ADMIN) {
       if (!resolvedInstitutionId && !existingUser.exists) {
         const apiError = new ApiError('Institution is required for this role', 'MISSING_INSTITUTION', 400)
         return NextResponse.json(apiError, { status: apiError.statusCode ?? 400 })
@@ -76,15 +150,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const derivedName = userProfile?.fullName || userProfile?.displayName || decodedToken.name || userEmail.split('@')[0]
+    const derivedName = userProfile?.fullName || userProfile?.displayName || existingData?.fullName || scopedUserData?.fullName || decodedToken.name || userEmail.split('@')[0]
 
     const userPayload = {
       uid: userId,
       id: userId,
       fullName: derivedName,
-      displayName: userProfile?.displayName || decodedToken.name || derivedName,
+      displayName: userProfile?.displayName || existingData?.displayName || scopedUserData?.displayName || decodedToken.name || derivedName,
       email: userEmail,
-      role: userRole,
+      role: resolvedRole,
       status: UserStatus.ACTIVE,
       language: 'en',
       mfaEnabled: false,
@@ -110,6 +184,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { merge: true }
     )
 
+    const existingClaims = authUserRecord.customClaims || {}
+    const shouldUpdateClaims =
+      existingClaims.role !== resolvedRole ||
+      (resolvedInstitutionId && existingClaims.institutionId !== resolvedInstitutionId)
+
+    if (shouldUpdateClaims) {
+      try {
+        await adminAuth.setCustomUserClaims(userId, {
+          ...existingClaims,
+          role: resolvedRole,
+          ...(resolvedInstitutionId
+            ? { institutionId: resolvedInstitutionId, org: resolvedInstitutionId }
+            : {}),
+        })
+      } catch (claimsError) {
+        console.error('Failed to sync custom claims:', claimsError)
+      }
+    }
+
     // Keep institution-scoped copy for tenant-local queries.
     if (resolvedInstitutionId) {
       await adminDb
@@ -132,7 +225,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         success: true,
         userId,
         email: userEmail,
-        role: userRole,
+        role: resolvedRole,
         institutionId: resolvedInstitutionId,
         message: 'Session created successfully'
       },

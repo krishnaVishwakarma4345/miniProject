@@ -23,6 +23,9 @@ const statusOptions = [
 	{ label: 'All statuses', value: 'all' },
 	{ label: 'Under review', value: ActivityStatus.UNDER_REVIEW },
 	{ label: 'Submitted', value: ActivityStatus.SUBMITTED },
+	{ label: 'Approved', value: ActivityStatus.APPROVED },
+	{ label: 'Rejected', value: ActivityStatus.REJECTED },
+	{ label: 'Revision requested', value: ActivityStatus.REVISION_REQUESTED },
 ]
 
 const assignmentOptions = [

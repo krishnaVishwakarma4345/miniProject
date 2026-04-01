@@ -1,40 +1,69 @@
-const pendingReports = [
-	{ name: "Quarterly participation", eta: "Drafting" },
-	{ name: "Faculty workload", eta: "Awaiting data" },
-	{ name: "Accreditation export", eta: "Requires mapping" },
-];
+"use client"
+
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/feedback/Alert'
+import { useReports } from '@/features/reports/hooks/useReports'
 
 export default function AdminReportsPage() {
+	const { templates, latestReport, isGenerating, error, generateReport } = useReports()
+
 	return (
 		<div className="space-y-8">
 			<section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
 				<p className="text-xs uppercase tracking-[0.4em] text-slate-400">Reports</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">Automated exports</h1>
 				<p className="mt-4 max-w-2xl text-sm text-slate-600">
-					This view will be wired to Firestore aggregations and PDF exports. For now, it documents which deliverables must be implemented before phase 12.
+					Generate real institution reports from live Firestore data.
 				</p>
+				<div className="mt-6">
+					<Button onClick={() => { void generateReport() }} disabled={isGenerating}>
+						{isGenerating ? 'Generating...' : 'Generate live report'}
+					</Button>
+				</div>
 			</section>
 
+			{error ? (
+				<Alert variant="error" title="Report action failed">
+					{error}
+				</Alert>
+			) : null}
+
 			<section className="rounded-2xl border border-slate-200 bg-white p-6">
-				<h2 className="text-lg font-semibold text-slate-900">Pending templates</h2>
+				<h2 className="text-lg font-semibold text-slate-900">Available templates</h2>
 				<div className="mt-4 divide-y divide-slate-100">
-					{pendingReports.map((report) => (
-						<div key={report.name} className="flex items-center justify-between py-3 text-sm text-slate-700">
-							<span>{report.name}</span>
-							<span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{report.eta}</span>
+					{templates.map((template) => (
+						<div key={template.id} className="py-3 text-sm text-slate-700">
+							<p className="font-semibold text-slate-900">{template.name}</p>
+							<p>{template.description}</p>
+							<p className="text-xs text-slate-500">Recommended for: {template.recommendedFor}</p>
 						</div>
 					))}
 				</div>
 			</section>
 
-			<section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
-				<p className="font-semibold text-slate-800">Next steps</p>
-				<ol className="mt-3 list-decimal space-y-2 pl-5">
-					<li>Create `/api/reports` handlers (list + generate).</li>
-					<li>Connect Cloudinary signed URLs for PDF artifacts.</li>
-					<li>Add status polling in the client to show progress.</li>
-				</ol>
+			<section className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-700">
+				<h2 className="text-lg font-semibold text-slate-900">Latest generated report</h2>
+				{latestReport ? (
+					<div className="mt-4 space-y-4">
+						<p className="font-medium">{latestReport.fileName}</p>
+						<div className="grid gap-3 md:grid-cols-2">
+							{latestReport.sections.map((section) => (
+								<div key={section.title} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+									<p className="text-xs uppercase tracking-wide text-slate-500">{section.title}</p>
+									<p className="text-lg font-semibold text-slate-900">{section.value}</p>
+								</div>
+							))}
+						</div>
+						<ul className="list-disc space-y-1 pl-5 text-slate-600">
+							{latestReport.highlights.map((item) => (
+								<li key={item}>{item}</li>
+							))}
+						</ul>
+					</div>
+				) : (
+					<p className="mt-4 text-slate-500">No report generated yet. Click Generate live report.</p>
+				)}
 			</section>
 		</div>
-	);
+	)
 }

@@ -8,13 +8,38 @@ type InstitutionItem = {
   isActive: boolean
 }
 
+const DEFAULT_INSTITUTION = {
+  id: 'terna-engineering-college',
+  name: 'Terna Engineering College',
+}
+
 export async function GET() {
   try {
     const adminDb = getAdminFirestore()
-    const snapshot = await adminDb
+    let snapshot = await adminDb
       .collection('institutions')
       .where('isActive', '==', true)
       .get()
+
+    if (snapshot.empty) {
+      const now = new Date()
+      await adminDb.collection('institutions').doc(DEFAULT_INSTITUTION.id).set(
+        {
+          id: DEFAULT_INSTITUTION.id,
+          name: DEFAULT_INSTITUTION.name,
+          isActive: true,
+          createdBy: 'system-seed',
+          createdAt: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+
+      snapshot = await adminDb
+        .collection('institutions')
+        .where('isActive', '==', true)
+        .get()
+    }
 
     const institutions: InstitutionItem[] = snapshot.docs
       .map((doc) => ({

@@ -4,6 +4,7 @@ import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { UserRole } from '@/types/user.types'
+import { ensureInstitutionActivityMirror, getInstitutionActivitiesCollection } from '@/lib/firebase/firestore/activity-tenant.utils'
 
 interface ReviewQueueResponse {
 	items: Activity[]
@@ -15,6 +16,16 @@ interface ReviewQueueResponse {
 }
 
 const DEFAULT_PAGE_SIZE = 25
+const PENDING_STATUSES: ActivityStatus[] = [
+	ActivityStatus.SUBMITTED,
+	ActivityStatus.UNDER_REVIEW,
+	ActivityStatus.REVISION_REQUESTED,
+]
+const REVIEW_SECTION_STATUSES: ActivityStatus[] = [
+	...PENDING_STATUSES,
+	ActivityStatus.APPROVED,
+	ActivityStatus.REJECTED,
+]
 
 export async function GET(request: NextRequest) {
 	try {
@@ -55,8 +66,10 @@ export async function GET(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
+		await ensureInstitutionActivityMirror(adminDb, institutionId)
+
 		const { searchParams } = new URL(request.url)
-		const status = (searchParams.get('status') as ActivityStatus) || ActivityStatus.UNDER_REVIEW
+		const status = searchParams.get('status') as ActivityStatus | null
 		const category = searchParams.get('category')
 		const assignment = searchParams.get('assignment')
 		const search = (searchParams.get('search') || '').toLowerCase()
@@ -66,15 +79,22 @@ export async function GET(request: NextRequest) {
 			: DEFAULT_PAGE_SIZE
 
 		// Keep this query index-safe while composite indexes are still building.
-		const snapshot = await adminDb
-			.collection('activities')
+		const snapshot = await getInstitutionActivitiesCollection(adminDb, institutionId)
 			.where('institutionId', '==', institutionId)
 			.limit(Math.max(pageSize * 5, 100))
 			.get()
 
 		const baseItems = snapshot.docs
 			.map((doc) => ({ id: doc.id, ...doc.data() }))
-			.filter((item) => item.status === status)
+			.filter((item) => {
+				const itemStatus = item.status as ActivityStatus
+
+				if (status) {
+					return itemStatus === status
+				}
+
+				return REVIEW_SECTION_STATUSES.includes(itemStatus)
+			})
 			.sort((a, b) => {
 				const left = typeof a.createdAt === 'number' ? a.createdAt : 0
 				const right = typeof b.createdAt === 'number' ? b.createdAt : 0
@@ -101,10 +121,11 @@ export async function GET(request: NextRequest) {
 
 		items = items.slice(0, pageSize)
 
+		const pendingItems = baseItems.filter((item) => PENDING_STATUSES.includes(item.status))
 		const stats: ReviewQueueResponse['stats'] = {
-			pending: baseItems.length,
-			assignedToMe: baseItems.filter((item) => item.assignedTo === decoded.uid).length,
-			unassigned: baseItems.filter((item) => !item.assignedTo).length,
+			pending: pendingItems.length,
+			assignedToMe: pendingItems.filter((item) => item.assignedTo === decoded.uid).length,
+			unassigned: pendingItems.filter((item) => !item.assignedTo).length,
 		}
 
 		const payload: ApiResponse<ReviewQueueResponse> = {

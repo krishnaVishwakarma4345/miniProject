@@ -1,54 +1,74 @@
-const analyticsHighlights = [
-	{
-		title: "Engagement",
-		description: "Average activities logged per student in the last 30 days",
-		value: "8.2",
-		delta: "+12% vs last month",
-	},
-	{
-		title: "Faculty response time",
-		description: "Median time to review a submission",
-		value: "18h",
-		delta: "-3h vs target",
-	},
-	{
-		title: "Portfolio reach",
-		description: "External portfolio views generated from share links",
-		value: "1,240",
-		delta: "+220 week over week",
-	},
-];
+"use client"
+
+import { useAnalytics } from '@/features/analytics/hooks/useAnalytics'
+import MetricCard from '@/features/analytics/components/MetricCard'
+import { Alert } from '@/components/feedback/Alert'
+import { Select } from '@/components/ui/Select'
 
 export default function AdminAnalyticsPage() {
+	const { data, range, isLoading, error, setRange } = useAnalytics(true)
+
 	return (
 		<div className="space-y-8">
 			<section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-8">
 				<p className="text-xs uppercase tracking-[0.4em] text-blue-400">Analytics</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">Institution health</h1>
 				<p className="mt-4 max-w-3xl text-sm text-slate-600">
-					Hook these tiles to `/api/analytics/*` route handlers to surface live participation insights. Until then, mocked values help product review the intended layout.
+					Live analytics from your institution database.
 				</p>
+				<div className="mt-4 max-w-xs">
+					<Select
+						value={range}
+						onChange={(event) => setRange(event.target.value as '7d' | '30d' | '90d')}
+						options={[
+							{ label: 'Last 7 days', value: '7d' },
+							{ label: 'Last 30 days', value: '30d' },
+							{ label: 'Last 90 days', value: '90d' },
+						]}
+					/>
+				</div>
 			</section>
 
-			<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-				{analyticsHighlights.map((highlight) => (
-					<article key={highlight.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-						<div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">{highlight.title}</div>
-						<div className="mt-4 text-4xl font-semibold text-slate-900">{highlight.value}</div>
-						<p className="mt-2 text-sm text-emerald-600">{highlight.delta}</p>
-						<p className="mt-4 text-sm text-slate-600">{highlight.description}</p>
-					</article>
+			{error ? (
+				<Alert variant="error" title="Unable to load analytics">
+					{error}
+				</Alert>
+			) : null}
+
+			<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+				{(data?.metrics || []).map((metric, index) => (
+					<MetricCard key={metric.id} metric={metric} delay={index * 0.06} />
 				))}
 			</section>
 
-			<section className="rounded-2xl border border-slate-200 bg-white p-6">
-				<h2 className="text-lg font-semibold text-slate-900">Data wiring checklist</h2>
-				<ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
-					<li>Connect Firestore aggregations to `/api/analytics/overview`.</li>
-					<li>Verify role-scoped access via Firebase custom claims.</li>
-					<li>Add CSV export endpoint at `/api/analytics/export`.</li>
-				</ul>
-			</section>
+			{isLoading ? (
+				<p className="text-sm text-slate-500">Loading analytics...</p>
+			) : (
+				<section className="grid gap-6 lg:grid-cols-2">
+					<article className="rounded-2xl border border-slate-200 bg-white p-6">
+						<h2 className="text-lg font-semibold text-slate-900">Top departments</h2>
+						<ul className="mt-4 space-y-2 text-sm text-slate-600">
+							{(data?.departments || []).slice(0, 6).map((item) => (
+								<li key={item.department} className="flex items-center justify-between">
+									<span>{item.department}</span>
+									<span className="font-semibold text-slate-900">{item.total}</span>
+								</li>
+							))}
+						</ul>
+					</article>
+					<article className="rounded-2xl border border-slate-200 bg-white p-6">
+						<h2 className="text-lg font-semibold text-slate-900">Top students</h2>
+						<ul className="mt-4 space-y-2 text-sm text-slate-600">
+							{(data?.topStudents || []).map((student) => (
+								<li key={student.studentId} className="flex items-center justify-between">
+									<span>{student.name}</span>
+									<span className="font-semibold text-slate-900">{student.pointsAwarded || 0} pts</span>
+								</li>
+							))}
+						</ul>
+					</article>
+				</section>
+			)}
 		</div>
-	);
+	)
 }

@@ -91,7 +91,7 @@ const verifySessionCookie = async (
 
     // Extract user info and role from token
     const uid = decodedToken.uid
-    const role = decodedToken.custom_claims?.role || 'student'
+    const role = (decodedToken.role as string | undefined) || decodedToken.custom_claims?.role || 'student'
 
     return { uid, role }
   } catch (error) {

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Activity } from '@/types'
+import { ActivityStatus } from '@/types/activity.types'
 import { formatDate, getRelativeTime } from '@/utils/date.utils'
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/constants/activityCategories'
 import ActivityStatusBadge from '@/features/activities/components/ActivityStatusBadge'
@@ -21,6 +22,7 @@ interface ReviewCardProps {
 export function ReviewCard({ activity, selected, onSelectToggle, onApprove, onReject, onAssign }: ReviewCardProps) {
 	const proofCount = activity.proofFiles?.length ?? 0
 	const categoryColor = CATEGORY_COLORS[activity.category]
+	const isFinalized = activity.status === ActivityStatus.APPROVED || activity.status === ActivityStatus.REJECTED
 
 	return (
 		<motion.article
@@ -56,7 +58,7 @@ export function ReviewCard({ activity, selected, onSelectToggle, onApprove, onRe
 								<span className='font-semibold text-slate-700'>Activity date:</span> {formatDate(activity.activityDate)}
 							</li>
 							<li>
-								<span className='font-semibold text-slate-700'>Pending for:</span> {getRelativeTime(activity.submittedAt || activity.createdAt)}
+								<span className='font-semibold text-slate-700'>{isFinalized ? 'Reviewed:' : 'Pending for:'}</span> {getRelativeTime((isFinalized ? activity.reviewedAt : activity.submittedAt) || activity.createdAt)}
 							</li>
 						</ul>
 						<div className='flex flex-wrap gap-2 text-xs text-slate-500'>
@@ -67,11 +69,13 @@ export function ReviewCard({ activity, selected, onSelectToggle, onApprove, onRe
 				</div>
 				<div className='flex flex-1 flex-col gap-3 md:items-end'>
 					<ActivityStatusBadge status={activity.status} />
-					<div className='flex flex-wrap gap-2'>
-						<Button variant='ghost' size='sm' onClick={() => onAssign?.(activity)}>Assign</Button>
-						<Button variant='outline' size='sm' onClick={() => onReject(activity)}>Reject</Button>
-						<Button size='sm' onClick={() => onApprove(activity)}>Approve</Button>
-					</div>
+					{!isFinalized ? (
+						<div className='flex flex-wrap gap-2'>
+							<Button variant='ghost' size='sm' onClick={() => onAssign?.(activity)}>Assign</Button>
+							<Button variant='outline' size='sm' onClick={() => onReject(activity)}>Reject</Button>
+							<Button size='sm' onClick={() => onApprove(activity)}>Approve</Button>
+						</div>
+					) : null}
 					<Link href={`/faculty/review/${activity.id}`} className='text-sm font-semibold text-slate-600 hover:text-slate-900'>
 						View details →
 					</Link>

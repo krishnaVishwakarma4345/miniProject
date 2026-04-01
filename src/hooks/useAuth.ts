@@ -178,8 +178,6 @@ export function useAuth(): UseAuthReturn {
           userProfile: {
             fullName: userCredential.user.displayName || 'User',
             displayName: userCredential.user.displayName || 'User',
-            role: UserRole.STUDENT,
-            institutionId: '',
             signUpMethod: 'google',
           },
         })
@@ -366,8 +364,6 @@ export function useAuth(): UseAuthReturn {
           userProfile: {
             fullName: userCredential.user.displayName || 'User',
             displayName: userCredential.user.displayName || 'User',
-            role: UserRole.STUDENT,
-            institutionId: '',
             signUpMethod: 'google',
           },
         })

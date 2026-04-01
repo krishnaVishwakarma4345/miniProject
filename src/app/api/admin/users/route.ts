@@ -1,8 +1,341 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server'
+import { ApiResponse, UserRole, UserStatus } from '@/types'
+import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
+import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
+import { getAdminFirestore } from '@/lib/firebase/admin'
+import { AdminUserSummary } from '@/features/users/types/user.types'
 
-export async function GET() {
-	return NextResponse.json({
-		message: "Users API placeholder",
-		users: [],
-	});
+interface UserProfile {
+	uid?: string
+	fullName?: string
+	displayName?: string
+	email?: string
+	role?: UserRole
+	status?: UserStatus
+	institutionId?: string
+	lastLoginAt?: number
+	updatedAt?: number
+	studentProfile?: { department?: string; totalActivities?: number }
+	facultyProfile?: { department?: string }
+	adminProfile?: { department?: string }
+}
+
+interface UpdateUserBody {
+	userId?: string
+	role?: UserRole
+	status?: UserStatus
+	department?: string
+}
+
+interface BulkRoleBody {
+	action?: 'bulkRoleUpdate'
+	userIds?: string[]
+	role?: UserRole
+}
+
+const extractInstitutionFromPath = (path: string): string | undefined => {
+	const parts = path.split('/')
+	const institutionsIndex = parts.indexOf('institutions')
+	if (institutionsIndex === -1) return undefined
+	return parts[institutionsIndex + 1]
+}
+
+const resolveUserProfile = async (uid: string, email: string | undefined, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
+	const userRef = adminDb.collection('users').doc(uid)
+	const userDoc = await userRef.get()
+	const globalUser = userDoc.exists ? (userDoc.data() as UserProfile) : null
+
+	let scopedDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null
+
+	try {
+		const scopedByUid = await adminDb
+			.collectionGroup('users')
+			.where('uid', '==', uid)
+			.limit(1)
+			.get()
+
+		if (!scopedByUid.empty) {
+			scopedDoc = scopedByUid.docs[0]
+		}
+	} catch {
+		// Ignore collection group index/bootstrap issues and continue with global user fallback.
+	}
+
+	if (!scopedDoc && email) {
+		try {
+			const scopedByEmail = await adminDb
+				.collectionGroup('users')
+				.where('email', '==', email)
+				.limit(1)
+				.get()
+
+			if (!scopedByEmail.empty) {
+				scopedDoc = scopedByEmail.docs[0]
+			}
+		} catch {
+			// Ignore collection group index/bootstrap issues and continue with global user fallback.
+		}
+	}
+
+	if (!scopedDoc) {
+		return globalUser ? { ...globalUser, uid } : null
+	}
+
+	const scopedData = scopedDoc.data() as UserProfile
+	const scopedInstitutionId = scopedData.institutionId || extractInstitutionFromPath(scopedDoc.ref.path)
+
+	const merged: UserProfile = {
+		...globalUser,
+		...scopedData,
+		uid,
+		institutionId: globalUser?.institutionId || scopedInstitutionId,
+	}
+
+	if (!globalUser?.institutionId && merged.institutionId) {
+		await userRef.set({ institutionId: merged.institutionId, updatedAt: Date.now() }, { merge: true })
+	}
+
+	return merged
+}
+
+const mapUserSummary = (uid: string, user: UserProfile): AdminUserSummary => ({
+	id: uid,
+	name: user.fullName || user.displayName || user.email || 'Unknown User',
+	email: user.email || 'unknown@example.com',
+	role: user.role || UserRole.STUDENT,
+	status: user.status || UserStatus.ACTIVE,
+	department: user.studentProfile?.department || user.facultyProfile?.department || user.adminProfile?.department,
+	lastActive: user.lastLoginAt,
+	totalActivities: user.studentProfile?.totalActivities,
+})
+
+const getAuthorizedAdminProfile = async (request: NextRequest, adminDb: FirebaseFirestore.Firestore) => {
+	const session = parseSessionCookie(request.headers)
+	if (!session) {
+		return { error: NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Unauthorized', timestamp: Date.now(), statusCode: 401 }, { status: 401 }) }
+	}
+
+	const decoded = await verifySessionCookie(session, true)
+	const adminProfile = await resolveUserProfile(decoded.uid, decoded.email, adminDb)
+	const claimInstitutionId = (decoded.institutionId as string | undefined) || (decoded.org as string | undefined) || (decoded.custom_claims?.institutionId as string | undefined) || (decoded.custom_claims?.org as string | undefined)
+	const resolvedAdminProfile = adminProfile ? { ...adminProfile, institutionId: adminProfile.institutionId || claimInstitutionId } : null
+	const role = adminProfile?.role || (decoded.role as UserRole | undefined) || (decoded.custom_claims?.role as UserRole | undefined) || UserRole.STUDENT
+
+	if (role !== UserRole.ADMIN) {
+		return { error: NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 }) }
+	}
+
+	if (!resolvedAdminProfile?.institutionId) {
+		return { error: NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for admin', timestamp: Date.now(), statusCode: 403 }, { status: 403 }) }
+	}
+
+	if (adminProfile && !adminProfile.institutionId && resolvedAdminProfile.institutionId) {
+		await adminDb.collection('users').doc(decoded.uid).set({ institutionId: resolvedAdminProfile.institutionId, updatedAt: Date.now() }, { merge: true })
+	}
+
+	return { adminProfile: resolvedAdminProfile }
+}
+
+export async function GET(request: NextRequest) {
+	try {
+		const adminDb = getAdminFirestore()
+		const auth = await getAuthorizedAdminProfile(request, adminDb)
+		if ('error' in auth) {
+			return auth.error
+		}
+
+		const { searchParams } = new URL(request.url)
+		const roleFilter = searchParams.get('role')
+		const statusFilter = searchParams.get('status')
+		const searchFilter = (searchParams.get('search') || '').trim().toLowerCase()
+
+		const usersSnapshot = await adminDb
+			.collection('users')
+			.where('institutionId', '==', auth.adminProfile.institutionId)
+			.get()
+
+		let users = usersSnapshot.docs.map((doc) => mapUserSummary(doc.id, doc.data() as UserProfile))
+
+		if (roleFilter && roleFilter !== 'all') {
+			users = users.filter((user) => user.role === roleFilter)
+		}
+
+		if (statusFilter && statusFilter !== 'all') {
+			users = users.filter((user) => user.status === statusFilter)
+		}
+
+		if (searchFilter) {
+			users = users.filter((user) =>
+				user.name.toLowerCase().includes(searchFilter) ||
+				user.email.toLowerCase().includes(searchFilter) ||
+				(user.department || '').toLowerCase().includes(searchFilter)
+			)
+		}
+
+		users.sort((a, b) => (a.name > b.name ? 1 : -1))
+
+		return NextResponse.json<ApiResponse<AdminUserSummary[]>>({
+			success: true,
+			data: users,
+			message: 'Users fetched',
+			timestamp: Date.now(),
+			statusCode: 200,
+		})
+	} catch (error) {
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			data: null,
+			message: error instanceof Error ? error.message : 'Failed to fetch users',
+			timestamp: Date.now(),
+			statusCode: 500,
+		}, { status: 500 })
+	}
+}
+
+export async function PATCH(request: NextRequest) {
+	try {
+		const adminDb = getAdminFirestore()
+		const auth = await getAuthorizedAdminProfile(request, adminDb)
+		if ('error' in auth) {
+			return auth.error
+		}
+
+		const body = (await request.json()) as UpdateUserBody
+		if (!body.userId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'userId is required', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
+		}
+
+		const userRef = adminDb.collection('users').doc(body.userId)
+		const userDoc = await userRef.get()
+		if (!userDoc.exists) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'User not found', timestamp: Date.now(), statusCode: 404 }, { status: 404 })
+		}
+
+		const targetUser = userDoc.data() as UserProfile
+		if (targetUser.institutionId !== auth.adminProfile.institutionId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You can only manage users from your institution', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		if (targetUser.role === UserRole.MASTER_ADMIN) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Cannot modify master admin users', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		const updates: Record<string, unknown> = { updatedAt: Date.now() }
+		if (body.role && body.role !== UserRole.MASTER_ADMIN) {
+			updates.role = body.role
+		}
+		if (body.status) {
+			updates.status = body.status
+		}
+		if (body.department) {
+			if (targetUser.role === UserRole.STUDENT) {
+				updates.studentProfile = { ...(targetUser.studentProfile || {}), department: body.department }
+			} else if (targetUser.role === UserRole.FACULTY) {
+				updates.facultyProfile = { ...(targetUser.facultyProfile || {}), department: body.department }
+			} else if (targetUser.role === UserRole.ADMIN) {
+				updates.adminProfile = { ...(targetUser.adminProfile || {}), department: body.department }
+			}
+		}
+
+		await userRef.set(updates, { merge: true })
+
+		if (targetUser.institutionId) {
+			await adminDb
+				.collection('institutions')
+				.doc(targetUser.institutionId)
+				.collection('users')
+				.doc(body.userId)
+				.set(updates, { merge: true })
+		}
+
+		const updatedDoc = await userRef.get()
+		const updatedUser = mapUserSummary(updatedDoc.id, updatedDoc.data() as UserProfile)
+
+		return NextResponse.json<ApiResponse<AdminUserSummary>>({
+			success: true,
+			data: updatedUser,
+			message: 'User updated',
+			timestamp: Date.now(),
+			statusCode: 200,
+		})
+	} catch (error) {
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			data: null,
+			message: error instanceof Error ? error.message : 'Failed to update user',
+			timestamp: Date.now(),
+			statusCode: 500,
+		}, { status: 500 })
+	}
+}
+
+export async function POST(request: NextRequest) {
+	try {
+		const adminDb = getAdminFirestore()
+		const auth = await getAuthorizedAdminProfile(request, adminDb)
+		if ('error' in auth) {
+			return auth.error
+		}
+
+		const body = (await request.json()) as BulkRoleBody
+		if (body.action !== 'bulkRoleUpdate' || !body.userIds?.length || !body.role) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Invalid bulk role update payload', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
+		}
+
+		if (body.role === UserRole.MASTER_ADMIN) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Cannot assign master admin role from admin panel', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		const now = Date.now()
+
+		await Promise.all(
+			body.userIds.map(async (userId) => {
+				const userRef = adminDb.collection('users').doc(userId)
+				const userDoc = await userRef.get()
+
+				if (!userDoc.exists) return
+
+				const user = userDoc.data() as UserProfile
+				if (user.institutionId !== auth.adminProfile.institutionId) return
+				if (user.role === UserRole.MASTER_ADMIN) return
+
+				const updates = { role: body.role, updatedAt: now }
+				await userRef.set(updates, { merge: true })
+
+				if (user.institutionId) {
+					await adminDb
+						.collection('institutions')
+						.doc(user.institutionId)
+						.collection('users')
+						.doc(userId)
+						.set(updates, { merge: true })
+				}
+			})
+		)
+
+		const usersSnapshot = await adminDb
+			.collection('users')
+			.where('institutionId', '==', auth.adminProfile.institutionId)
+			.get()
+
+		const users = usersSnapshot.docs
+			.map((doc) => mapUserSummary(doc.id, doc.data() as UserProfile))
+			.sort((a, b) => (a.name > b.name ? 1 : -1))
+
+		return NextResponse.json<ApiResponse<AdminUserSummary[]>>({
+			success: true,
+			data: users,
+			message: 'Bulk role update complete',
+			timestamp: Date.now(),
+			statusCode: 200,
+		})
+	} catch (error) {
+		return NextResponse.json<ApiResponse<null>>({
+			success: false,
+			data: null,
+			message: error instanceof Error ? error.message : 'Failed to update users',
+			timestamp: Date.now(),
+			statusCode: 500,
+		}, { status: 500 })
+	}
 }

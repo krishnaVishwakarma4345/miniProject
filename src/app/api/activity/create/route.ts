@@ -3,6 +3,7 @@ import { Activity, ActivityCategory, ActivityCreateRequest, ActivityStatus, Acti
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
+import { mirrorActivityDocument } from '@/lib/firebase/firestore/activity-tenant.utils'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -77,10 +78,13 @@ export async function POST(request: NextRequest) {
 		}
 
 		const activityRef = adminDb.collection('activities').doc()
-		await activityRef.set({
+		const payload = {
 			...document,
 			id: activityRef.id,
-		})
+		}
+
+		await activityRef.set(payload)
+		await mirrorActivityDocument(adminDb, institutionId, activityRef.id, payload)
 
 		const id = activityRef.id
 

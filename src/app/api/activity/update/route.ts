@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Activity, ActivityStatus, ApiResponse } from '@/types'
-import { getActivityById, updateActivity, updateActivityStatus } from '@/lib/firebase/firestore/activities.repository'
+import { getAdminFirestore } from '@/lib/firebase/admin'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
+import { mirrorActivityDocument } from '@/lib/firebase/firestore/activity-tenant.utils'
 
 export async function PATCH(request: NextRequest) {
 	try {
@@ -23,13 +24,40 @@ export async function PATCH(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'activityId is required', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
 		}
 
-		if (body.status) {
-			await updateActivityStatus(body.activityId, body.status, body.remarks)
-		} else if (body.updates) {
-			await updateActivity(body.activityId, body.updates)
+		const adminDb = getAdminFirestore()
+		const globalDoc = await adminDb.collection('activities').doc(body.activityId).get()
+		if (!globalDoc.exists) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Activity not found', timestamp: Date.now(), statusCode: 404 }, { status: 404 })
 		}
 
-		const updated = await getActivityById(body.activityId)
+		const current = globalDoc.data() as Activity
+		const institutionId = current.institutionId
+		if (!institutionId) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for activity', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		const updates: Record<string, unknown> = { updatedAt: Date.now() }
+		if (body.status) {
+			updates.status = body.status
+			if (body.remarks) {
+				updates.review = {
+					...(current.review || {}),
+					remarks: body.remarks,
+				}
+			}
+			if (body.status === ActivityStatus.APPROVED || body.status === ActivityStatus.REJECTED) {
+				updates.reviewedAt = Date.now()
+			}
+		} else if (body.updates) {
+			Object.assign(updates, body.updates)
+		}
+
+		await adminDb.collection('activities').doc(body.activityId).set(updates, { merge: true })
+		await mirrorActivityDocument(adminDb, institutionId, body.activityId, { ...current, ...updates, id: body.activityId })
+
+		const updated = (await adminDb.collection('activities').doc(body.activityId).get()).exists
+			? ({ id: body.activityId, ...(await adminDb.collection('activities').doc(body.activityId).get()).data() } as Activity)
+			: null
 
 		return NextResponse.json<ApiResponse<Activity | null>>({
 			success: true,
