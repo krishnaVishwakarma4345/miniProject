@@ -17,7 +17,7 @@ export interface UserTableProps {
 export function UserTable({ users, selectedIds, isLoading = false, onSelect, onEdit }: UserTableProps) {
 	if (isLoading) {
 		return (
-			<div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
+			<div className="flex min-height-[200px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
 				<Spinner label="Loading users" />
 			</div>
 		)
