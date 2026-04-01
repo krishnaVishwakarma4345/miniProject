@@ -142,11 +142,6 @@ const config: Config = {
     // Custom plugins can be added here
     // Example: typography plugin, forms plugin, etc.
   ],
-
-  // Disable hover states on mobile for better performance
-  corePlugins: {
-    // Can be disabled if not needed
-  },
 };
 
 export default config;

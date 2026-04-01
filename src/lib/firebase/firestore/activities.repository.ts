@@ -57,7 +57,7 @@ export const getActivityById = async (activityId: string): Promise<Activity | nu
       code: "firestore/get-activity-failed",
       message: "Failed to fetch activity. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -99,7 +99,7 @@ export const getActivitiesByStudent = async (
       code: "firestore/get-activities-failed",
       message: "Failed to fetch activities. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -142,7 +142,7 @@ export const getPendingActivities = async (
       code: "firestore/get-pending-activities-failed",
       message: "Failed to fetch pending activities. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -190,7 +190,7 @@ export const getActivitiesByStatus = async (
       code: "firestore/get-activities-by-status-failed",
       message: "Failed to fetch activities. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -235,7 +235,7 @@ export const getActivitiesByCategory = async (
       code: "firestore/get-activities-by-category-failed",
       message: "Failed to fetch activities. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -267,7 +267,7 @@ export const createActivity = async (
       code: "firestore/create-activity-failed",
       message: "Failed to create activity. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -295,7 +295,7 @@ export const updateActivity = async (
       code: "firestore/update-activity-failed",
       message: "Failed to update activity. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -335,7 +335,7 @@ export const updateActivityStatus = async (
       code: "firestore/update-activity-status-failed",
       message: "Failed to update activity status. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -356,7 +356,7 @@ export const deleteActivity = async (activityId: string): Promise<void> => {
       code: "firestore/delete-activity-failed",
       message: "Failed to delete activity. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -384,7 +384,7 @@ export const bulkUpdateActivityStatus = async (
       code: "firestore/bulk-update-failed",
       message: "Failed to update activities. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -408,14 +408,18 @@ export const getActivityStats = async (
 
     const stats: Record<ActivityStatus, number> = {
       draft: 0,
+      submitted: 0,
       under_review: 0,
       approved: 0,
       rejected: 0,
+      revision_requested: 0,
     };
 
     querySnapshot.docs.forEach((doc) => {
       const status = doc.data().status as ActivityStatus;
-      stats[status]++;
+      if (status in stats) {
+        stats[status]++;
+      }
     });
 
     return stats;
@@ -424,6 +428,6 @@ export const getActivityStats = async (
       code: "firestore/get-activity-stats-failed",
       message: "Failed to fetch activity statistics. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };

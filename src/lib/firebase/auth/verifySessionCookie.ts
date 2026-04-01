@@ -9,6 +9,11 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { getAdminAuth } from "../admin";
 import { ApiError } from "@/types/api.types";
 
+const createVerifyApiError = (error: any, fallbackCode: string, message: string) =>
+  new ApiError(message, error?.code || fallbackCode, 401, {
+    details: error?.message,
+  });
+
 /**
  * Verify session cookie and return decoded token
  * @param sessionCookie - Session cookie value
@@ -30,13 +35,9 @@ export const verifySessionCookie = async (
 
     return decodedToken;
   } catch (error: any) {
-    const message = getErrorMessage(error.code);
+    const message = getErrorMessage(error?.code);
 
-    throw {
-      code: error.code || "auth/session-verify-failed",
-      message,
-      originalError: error,
-    } as ApiError;
+    throw createVerifyApiError(error, "auth/session-verify-failed", message);
   }
 };
 
@@ -58,13 +59,9 @@ export const verifyIdToken = async (
 
     return decodedToken;
   } catch (error: any) {
-    const message = getErrorMessage(error.code);
+    const message = getErrorMessage(error?.code);
 
-    throw {
-      code: error.code || "auth/token-verify-failed",
-      message,
-      originalError: error,
-    } as ApiError;
+    throw createVerifyApiError(error, "auth/token-verify-failed", message);
   }
 };
 
@@ -82,11 +79,7 @@ export const getUserCustomClaims = async (uid: string): Promise<Record<string, a
 
     return user.customClaims || {};
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/get-claims-failed",
-      message: "Failed to get user claims.",
-      originalError: error,
-    } as ApiError;
+    throw createVerifyApiError(error, "auth/get-claims-failed", "Failed to get user claims.");
   }
 };
 
@@ -103,11 +96,7 @@ export const verifyBearerToken = async (
   checkRevoked: boolean = true
 ): Promise<DecodedIdToken> => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw {
-      code: "auth/missing-token",
-      message: "Authorization header missing or invalid.",
-      originalError: null,
-    } as ApiError;
+    throw new ApiError("Authorization header missing or invalid.", "auth/missing-token", 401);
   }
 
   const token = authHeader.slice(7); // Remove "Bearer " prefix

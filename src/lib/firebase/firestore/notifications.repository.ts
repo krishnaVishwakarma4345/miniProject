@@ -60,7 +60,7 @@ export const getNotificationById = async (
       code: "firestore/get-notification-failed",
       message: "Failed to fetch notification. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -100,7 +100,7 @@ export const getNotificationsByUser = async (
       code: "firestore/get-notifications-failed",
       message: "Failed to fetch notifications. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -135,7 +135,7 @@ export const getUnreadNotifications = async (
       code: "firestore/get-unread-notifications-failed",
       message: "Failed to fetch unread notifications. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -154,7 +154,7 @@ export const getUnreadNotificationsCount = async (userId: string): Promise<numbe
       code: "firestore/get-unread-count-failed",
       message: "Failed to fetch unread count. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -186,7 +186,7 @@ export const createNotification = async (
       code: "firestore/create-notification-failed",
       message: "Failed to create notification. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -213,7 +213,7 @@ export const markNotificationAsRead = async (
       code: "firestore/mark-read-failed",
       message: "Failed to mark notification as read. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -236,7 +236,7 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
       code: "firestore/mark-all-read-failed",
       message: "Failed to mark notifications as read. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -257,7 +257,7 @@ export const deleteNotification = async (notificationId: string): Promise<void> 
       code: "firestore/delete-notification-failed",
       message: "Failed to delete notification. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -284,7 +284,7 @@ export const deleteAllNotifications = async (userId: string): Promise<void> => {
       code: "firestore/delete-all-notifications-failed",
       message: "Failed to delete notifications. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };
 
@@ -383,6 +383,6 @@ export const deleteOldNotifications = async (daysOld: number): Promise<number> =
       code: "firestore/delete-old-notifications-failed",
       message: "Failed to delete old notifications. Please try again.",
       originalError: error,
-    } as ApiError;
+    } as unknown as ApiError;
   }
 };

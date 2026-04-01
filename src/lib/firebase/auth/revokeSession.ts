@@ -8,6 +8,11 @@
 import { getAdminAuth } from "../admin";
 import { ApiError } from "@/types/api.types";
 
+const createAuthApiError = (error: any, fallbackCode: string, message: string) =>
+  new ApiError(message, error?.code || fallbackCode, 500, {
+    details: error?.message,
+  });
+
 /**
  * Revoke all sessions for a user
  * Invalidates all refresh tokens for the user
@@ -22,11 +27,7 @@ export const revokeAllUserSessions = async (uid: string): Promise<void> => {
     // Revoke all refresh tokens (this invalidates all sessions)
     await auth.revokeRefreshTokens(uid);
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/revoke-failed",
-      message: "Failed to revoke sessions.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/revoke-failed", "Failed to revoke sessions.");
   }
 };
 
@@ -51,11 +52,7 @@ export const getUserSessions = async (uid: string): Promise<any> => {
       },
     };
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/get-sessions-failed",
-      message: "Failed to get user sessions.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/get-sessions-failed", "Failed to get user sessions.");
   }
 };
 
@@ -77,11 +74,7 @@ export const disableUserAccount = async (uid: string): Promise<void> => {
     // Revoke all sessions
     await revokeAllUserSessions(uid);
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/disable-failed",
-      message: "Failed to disable user account.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/disable-failed", "Failed to disable user account.");
   }
 };
 
@@ -99,11 +92,7 @@ export const enableUserAccount = async (uid: string): Promise<void> => {
       disabled: false,
     });
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/enable-failed",
-      message: "Failed to enable user account.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/enable-failed", "Failed to enable user account.");
   }
 };
 
@@ -120,11 +109,7 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
 
     await auth.deleteUser(uid);
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/delete-failed",
-      message: "Failed to delete user account.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/delete-failed", "Failed to delete user account.");
   }
 };
 
@@ -149,11 +134,7 @@ export const forcePasswordReset = async (uid: string): Promise<string> => {
 
     return resetLink;
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/reset-failed",
-      message: "Failed to generate password reset link.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/reset-failed", "Failed to generate password reset link.");
   }
 };
 
@@ -176,11 +157,7 @@ export const setUserCustomClaims = async (
     // Revoke existing sessions to apply new claims immediately
     await revokeAllUserSessions(uid);
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/set-claims-failed",
-      message: "Failed to set user claims.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/set-claims-failed", "Failed to set user claims.");
   }
 };
 
@@ -209,10 +186,6 @@ export const bulkDeleteUsers = async (
 
     return { successful, failed };
   } catch (error: any) {
-    throw {
-      code: error.code || "auth/bulk-delete-failed",
-      message: "Failed to bulk delete users.",
-      originalError: error,
-    } as ApiError;
+    throw createAuthApiError(error, "auth/bulk-delete-failed", "Failed to bulk delete users.");
   }
 };

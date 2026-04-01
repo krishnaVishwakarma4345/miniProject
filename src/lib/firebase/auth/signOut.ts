@@ -31,11 +31,12 @@ export const signOut = async (): Promise<void> => {
   } catch (error) {
     const authError = error as AuthError;
 
-    throw {
-      code: authError.code || "auth/sign-out-failed",
-      message: "Failed to sign out. Please try again.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(
+      "Failed to sign out. Please try again.",
+      authError.code || "auth/sign-out-failed",
+      500,
+      { details: authError.message }
+    );
   }
 };
 
@@ -74,10 +75,8 @@ export const signOutAllSessions = async (userId: string): Promise<void> => {
       throw new Error(`Failed to revoke sessions: ${response.statusText}`);
     }
   } catch (error) {
-    throw {
-      code: "auth/revoke-sessions-failed",
-      message: "Failed to revoke sessions.",
-      originalError: error,
-    } as ApiError;
+    throw new ApiError("Failed to revoke sessions.", "auth/revoke-sessions-failed", 500, {
+      details: error instanceof Error ? error.message : undefined,
+    });
   }
 };

@@ -85,8 +85,12 @@ export async function GET(request: NextRequest) {
 			.get()
 
 		const baseItems = snapshot.docs
-			.map((doc) => ({ id: doc.id, ...doc.data() }))
+			.map((doc) => ({ id: doc.id, ...(doc.data() as Partial<Activity>) }))
 			.filter((item) => {
+				if (!item.status) {
+					return false
+				}
+
 				const itemStatus = item.status as ActivityStatus
 
 				if (status) {
@@ -107,10 +111,11 @@ export async function GET(request: NextRequest) {
 		}
 
 		if (search) {
-			items = items.filter((item) =>
-				item.title.toLowerCase().includes(search) ||
-				item.description.toLowerCase().includes(search)
-			)
+			items = items.filter((item) => {
+				const title = (item.title || '').toLowerCase()
+				const description = (item.description || '').toLowerCase()
+				return title.includes(search) || description.includes(search)
+			})
 		}
 
 		if (assignment === 'mine') {

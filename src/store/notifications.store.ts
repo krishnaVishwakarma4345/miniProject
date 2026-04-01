@@ -42,7 +42,6 @@ interface NotificationsStoreState {
 
 const toTimestamp = (value: Notification["createdAt"]): number => {
 	if (typeof value === "number") return value
-	if (value instanceof Date) return value.getTime()
 	if (value && typeof value === "object") {
 		const maybeTimestamp = value as { seconds?: number; toDate?: () => Date }
 		if (typeof maybeTimestamp.toDate === "function") {

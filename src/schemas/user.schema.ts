@@ -97,9 +97,7 @@ export const facultyProfileSchema = z.object({
   designation: z
     .enum(
       ["Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Teaching Assistant"],
-      {
-        errorMap: () => ({ message: "Invalid designation" }),
-      }
+      "Invalid designation"
     ),
 
   office: z
@@ -249,7 +247,7 @@ export const changeUserRoleSchema = z
     userId: z.string().min(1, "User ID is required"),
 
     newRole: z.nativeEnum(UserRole, {
-      errorMap: () => ({ message: "Invalid role" }),
+      message: "Invalid role",
     }),
 
     reason: z

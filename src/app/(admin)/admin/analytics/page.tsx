@@ -10,7 +10,7 @@ export default function AdminAnalyticsPage() {
 
 	return (
 		<div className="space-y-8">
-			<section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-8">
+			<section className="rounded-3xl border border-blue-100 bg-linear-to-br from-white to-blue-50 p-8">
 				<p className="text-xs uppercase tracking-[0.4em] text-blue-400">Analytics</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">Institution health</h1>
 				<p className="mt-4 max-w-3xl text-sm text-slate-600">

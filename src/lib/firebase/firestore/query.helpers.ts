@@ -244,7 +244,7 @@ export const buildCompositeQuery = (
  */
 export const buildAndConditions = (
   conditions: Array<[string, WhereFilterOp, any]>
-): QueryFieldFilterConstraint[] => {
+): QueryConstraint[] => {
   return conditions.map(([field, operator, value]) =>
     where(field, operator, value)
   );
