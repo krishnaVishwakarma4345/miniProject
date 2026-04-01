@@ -72,7 +72,12 @@ export function UserTable({ users, selectedIds, isLoading = false, onSelect, onE
 										{user.lastActive ? new Date(user.lastActive).toLocaleDateString() : "—"}
 									</td>
 									<td className="px-4 py-3 text-right">
-										<Button size="sm" variant="outline" onClick={() => onEdit(user.id)}>
+										<Button
+											size="sm"
+											variant="outline"
+											disabled={user.role === 'master_admin'}
+											onClick={() => onEdit(user.id)}
+										>
 											Edit
 										</Button>
 									</td>

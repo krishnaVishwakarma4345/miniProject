@@ -154,7 +154,9 @@ export async function GET(request: NextRequest) {
 			.where('institutionId', '==', auth.adminProfile.institutionId)
 			.get()
 
-		let users = usersSnapshot.docs.map((doc) => mapUserSummary(doc.id, doc.data() as UserProfile))
+		let users = usersSnapshot.docs
+			.map((doc) => mapUserSummary(doc.id, doc.data() as UserProfile))
+			.filter((user) => user.role !== UserRole.MASTER_ADMIN)
 
 		if (roleFilter && roleFilter !== 'all') {
 			users = users.filter((user) => user.role === roleFilter)

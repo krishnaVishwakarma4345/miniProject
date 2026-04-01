@@ -33,6 +33,7 @@ export function EditUserModal({ open, user, isSubmitting = false, onClose, onSav
 	const [role, setRole] = useState<UserRole>(user?.role ?? UserRole.STUDENT)
 	const [status, setStatus] = useState<UserStatus>(user?.status ?? UserStatus.ACTIVE)
 	const hasChanges = user ? role !== user.role || status !== user.status : false
+	const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN
 
 	useEffect(() => {
 		if (!user) return
@@ -40,7 +41,7 @@ export function EditUserModal({ open, user, isSubmitting = false, onClose, onSav
 		setStatus(user.status)
 	}, [user, open])
 
-	if (!user) return null
+	if (!user || isMasterAdmin) return null
 
 	return (
 		<Modal
