@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Activity, ActivityCategory, ActivityCreateRequest, ActivityStatus, ActivityType, ApiResponse } from '@/types'
-import { createActivity } from '@/lib/firebase/firestore/activities.repository'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
@@ -77,7 +76,13 @@ export async function POST(request: NextRequest) {
 			submittedAt: now,
 		}
 
-		const id = await createActivity(document)
+		const activityRef = adminDb.collection('activities').doc()
+		await activityRef.set({
+			...document,
+			id: activityRef.id,
+		})
+
+		const id = activityRef.id
 
 		return NextResponse.json<ApiResponse<{ id: string }>>({
 			success: true,
@@ -87,10 +92,17 @@ export async function POST(request: NextRequest) {
 			statusCode: 201,
 		}, { status: 201 })
 	} catch (error) {
+		const message =
+			error instanceof Error
+				? error.message
+				: typeof error === 'object' && error !== null && 'message' in error
+					? String((error as { message?: unknown }).message ?? 'Failed to create activity')
+					: 'Failed to create activity'
+
 		return NextResponse.json<ApiResponse<null>>({
 			success: false,
 			data: null,
-			message: error instanceof Error ? error.message : 'Failed to create activity',
+			message,
 			timestamp: Date.now(),
 			statusCode: 500,
 		}, { status: 500 })

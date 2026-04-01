@@ -1,11 +1,11 @@
 "use client"
 
 import Link from 'next/link'
-import { useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Activity, ApiResponse } from '@/types'
 import { CATEGORY_LABELS } from '@/constants/activityCategories'
 import { formatDate } from '@/utils/date.utils'
-import useActivities from '@/features/activities/hooks/useActivities'
 import ActivityTimeline from '@/features/activities/components/ActivityTimeline'
 import ActivityStatusBadge from '@/features/activities/components/ActivityStatusBadge'
 import { Button } from '@/components/ui/Button'
@@ -13,10 +13,47 @@ import { Badge } from '@/components/ui/Badge'
 import { LoadingSkeleton } from '@/components/data-display/LoadingSkeleton'
 import { ErrorState } from '@/components/data-display/ErrorState'
 
-export default function ActivityDetailPage({ params }: { params: { activityId: string } }) {
+export default function ActivityDetailPage() {
 	const router = useRouter()
-	const { activities, isLoading, error, refresh } = useActivities()
-	const activity = useMemo(() => activities.find((item) => item.id === params.activityId), [activities, params.activityId])
+	const params = useParams<{ activityId: string }>()
+	const activityId = Array.isArray(params?.activityId) ? params.activityId[0] : params?.activityId
+	const [activity, setActivity] = useState<Activity | null>(null)
+	const [isLoading, setIsLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
+
+	const loadActivity = async () => {
+		if (!activityId) {
+			setActivity(null)
+			setError('Missing activity id')
+			setIsLoading(false)
+			return
+		}
+
+		setIsLoading(true)
+		setError(null)
+		try {
+			const response = await fetch(`/api/activity/detail?activityId=${encodeURIComponent(activityId)}`, {
+				method: 'GET',
+				credentials: 'include',
+			})
+			const payload = (await response.json()) as ApiResponse<Activity>
+
+			if (!response.ok || !payload.success || !payload.data) {
+				throw new Error(payload.message || 'Activity not found')
+			}
+
+			setActivity(payload.data)
+		} catch (fetchError) {
+			setActivity(null)
+			setError(fetchError instanceof Error ? fetchError.message : 'Activity not found')
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	useEffect(() => {
+		void loadActivity()
+	}, [activityId])
 
 	if (isLoading && !activity) {
 		return (
@@ -27,7 +64,7 @@ export default function ActivityDetailPage({ params }: { params: { activityId: s
 	}
 
 	if (!activity) {
-		return <ErrorState title='Activity not found' message={error || 'We could not locate this submission.'} action={<Button onClick={() => refresh()}>Reload</Button>} />
+		return <ErrorState title='Activity not found' message={error || 'We could not locate this submission.'} action={<Button onClick={() => void loadActivity()}>Reload</Button>} />
 	}
 
 	return (
