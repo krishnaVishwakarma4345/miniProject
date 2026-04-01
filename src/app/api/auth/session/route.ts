@@ -39,9 +39,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const roleFromProfile = userProfile?.role
     const roleFromClaims = decodedToken.custom_claims?.role
     const requestedRole = roleFromProfile || roleFromClaims || UserRole.STUDENT
-    const userRole = Object.values(UserRole).includes(requestedRole as UserRole)
-      ? (requestedRole as UserRole)
-      : UserRole.STUDENT
     const userEmail = decodedToken.email
 
     if (!userEmail) {
@@ -53,6 +50,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const adminDb = getAdminFirestore()
     const userRef = adminDb.collection('users').doc(userId)
     const existingUser = await userRef.get()
+    const existingRole = existingUser.exists ? existingUser.data()?.role : undefined
+    const resolvedRoleSource = existingRole || requestedRole
+    const userRole = Object.values(UserRole).includes(resolvedRoleSource as UserRole)
+      ? (resolvedRoleSource as UserRole)
+      : UserRole.STUDENT
     const derivedName = userProfile?.fullName || userProfile?.displayName || decodedToken.name || userEmail.split('@')[0]
 
     await userRef.set(
