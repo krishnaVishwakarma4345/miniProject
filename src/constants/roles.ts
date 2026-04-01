@@ -12,6 +12,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.STUDENT]: "Student",
   [UserRole.FACULTY]: "Faculty",
   [UserRole.ADMIN]: "Administrator",
+  [UserRole.MASTER_ADMIN]: "Master Administrator",
 } as const;
 
 /**
@@ -24,6 +25,8 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
     "Review and approve student activities, provide feedback, and manage submissions",
   [UserRole.ADMIN]:
     "Manage users, view analytics, generate reports, and configure system settings",
+  [UserRole.MASTER_ADMIN]:
+    "Manage institutions and global tenancy settings across the platform",
 } as const;
 
 /**
@@ -85,6 +88,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     "audit-log:read",
     "system:health-check",
   ],
+
+  [UserRole.MASTER_ADMIN]: [
+    "institution:create",
+    "institution:read",
+    "institution:delete",
+  ],
 } as const;
 
 /**
@@ -126,6 +135,11 @@ export const ROLE_FEATURES: Record<UserRole, string[]> = {
     "audit_logging",
     "settings_control",
   ],
+
+  [UserRole.MASTER_ADMIN]: [
+    "institution_management",
+    "institution_registry",
+  ],
 } as const;
 
 /**
@@ -137,6 +151,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.STUDENT]: 1,
   [UserRole.FACULTY]: 2,
   [UserRole.ADMIN]: 3,
+  [UserRole.MASTER_ADMIN]: 4,
 } as const;
 
 /**
@@ -177,6 +192,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   [UserRole.STUDENT]: "blue",
   [UserRole.FACULTY]: "purple",
   [UserRole.ADMIN]: "red",
+  [UserRole.MASTER_ADMIN]: "amber",
 } as const;
 
 /**
@@ -186,4 +202,5 @@ export const ROLE_ICONS: Record<UserRole, string> = {
   [UserRole.STUDENT]: "graduation-cap",
   [UserRole.FACULTY]: "chalkboard-teacher",
   [UserRole.ADMIN]: "shield-star",
+  [UserRole.MASTER_ADMIN]: "crown",
 } as const;

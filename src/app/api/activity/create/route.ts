@@ -17,8 +17,25 @@ export async function POST(request: NextRequest) {
 
 		const adminDb = getAdminFirestore()
 		const userSnapshot = await adminDb.collection('users').doc(decoded.uid).get()
-		const userRecord = userSnapshot.exists ? (userSnapshot.data() as { institutionId?: string; displayName?: string; fullName?: string }) : null
-		const institutionId = userRecord?.institutionId
+		let userRecord = userSnapshot.exists ? (userSnapshot.data() as { institutionId?: string; displayName?: string; fullName?: string }) : null
+		let institutionId = userRecord?.institutionId
+
+		if (!institutionId) {
+			const scopedUserSnapshot = await adminDb
+				.collectionGroup('users')
+				.where('uid', '==', decoded.uid)
+				.limit(1)
+				.get()
+
+			if (!scopedUserSnapshot.empty) {
+				const scopedData = scopedUserSnapshot.docs[0].data() as { institutionId?: string; displayName?: string; fullName?: string }
+				institutionId = scopedData.institutionId
+				userRecord = {
+					...scopedData,
+					...userRecord,
+				}
+			}
+		}
 
 		if (!institutionId) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })

@@ -120,7 +120,7 @@ export function useAuth(): UseAuthReturn {
         language: 'en',
         mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
-        institutionId: '', // Will be set by session endpoint
+        institutionId: sessionData.institutionId || '',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -204,7 +204,7 @@ export function useAuth(): UseAuthReturn {
         language: 'en',
         mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
-        institutionId: '', // Will be set by session endpoint
+        institutionId: sessionData.institutionId || '',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -392,7 +392,7 @@ export function useAuth(): UseAuthReturn {
         language: 'en',
         mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
-        institutionId: '', // Will be set during onboarding
+        institutionId: sessionData.institutionId || '',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),

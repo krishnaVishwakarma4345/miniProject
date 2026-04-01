@@ -62,6 +62,7 @@ export function useAuthRedirect(options?: {
           // Wrong role, redirect to appropriate dashboard
           const roleDashboards: Record<string, string> = {
             admin: '/admin/dashboard',
+            master_admin: '/master-admin/institutions',
             faculty: '/faculty/dashboard',
             student: '/student/dashboard'
           }

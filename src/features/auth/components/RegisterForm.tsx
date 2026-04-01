@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
-import { useUIStore } from '@/store/ui.store'
 import { UserRole } from '@/types/user.types'
 import gsap from 'gsap'
 
@@ -28,7 +27,6 @@ export interface RegisterFormProps {
  */
 export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   const { register, isLoading, error: authError } = useAuth()
-  const uiStore = useUIStore()
 
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
@@ -40,19 +38,39 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [emailAvailable, setEmailAvailable] = useState(true)
   const [checkingEmail, setCheckingEmail] = useState(false)
+  const [institutionsLoading, setInstitutionsLoading] = useState(false)
+  const [institutionsError, setInstitutionsError] = useState<string | null>(null)
+  const [institutions, setInstitutions] = useState<Array<{ id: string; name: string }>>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const formRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
 
-  // Institutions mock data (would be fetched from API)
-  const institutions = [
-    { id: 'MIT', name: 'Massachusetts Institute of Technology' },
-    { id: 'Stanford', name: 'Stanford University' },
-    { id: 'Harvard', name: 'Harvard University' },
-    { id: 'Berkeley', name: 'UC Berkeley' }
-  ]
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      setInstitutionsLoading(true)
+      setInstitutionsError(null)
+
+      try {
+        const response = await fetch('/api/institutions')
+        const payload = await response.json()
+
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.message || 'Unable to load institutions')
+        }
+
+        const items = Array.isArray(payload.data) ? payload.data : []
+        setInstitutions(items)
+      } catch (error) {
+        setInstitutionsError(error instanceof Error ? error.message : 'Unable to load institutions')
+      } finally {
+        setInstitutionsLoading(false)
+      }
+    }
+
+    void fetchInstitutions()
+  }, [])
 
   // Progress bar animation
   useEffect(() => {
@@ -128,8 +146,16 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
         newErrors.displayName = 'Name is required'
       }
     } else if (step === 3) {
+      if (institutionsLoading) {
+        newErrors.institutionId = 'Please wait while institutions are loading'
+      }
+
       if (!institutionId) {
         newErrors.institutionId = 'Institution is required'
+      }
+
+      if (institutionsError) {
+        newErrors.institutionId = institutionsError
       }
     }
 
@@ -386,6 +412,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                 <select
                   id="institution"
                   value={institutionId}
+                  disabled={institutionsLoading || institutions.length === 0}
                   onChange={(e) => {
                     setInstitutionId(e.target.value)
                     if (errors.institutionId) setErrors({ ...errors, institutionId: '' })
@@ -394,7 +421,13 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                     errors.institutionId ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
                   } outline-none`}
                 >
-                  <option value="">Choose an institution...</option>
+                  <option value="">
+                    {institutionsLoading
+                      ? 'Loading institutions...'
+                      : institutions.length
+                        ? 'Choose an institution...'
+                        : 'No institutions available'}
+                  </option>
                   {institutions.map((inst) => (
                     <option key={inst.id} value={inst.id}>
                       {inst.name}
@@ -406,6 +439,11 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                     {errors.institutionId}
                   </motion.p>
                 )}
+                {institutionsError && !errors.institutionId ? (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-sm mt-1">
+                    {institutionsError}
+                  </motion.p>
+                ) : null}
               </div>
 
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">

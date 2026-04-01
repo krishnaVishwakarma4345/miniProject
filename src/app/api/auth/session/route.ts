@@ -51,41 +51,74 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const userRef = adminDb.collection('users').doc(userId)
     const existingUser = await userRef.get()
     const existingRole = existingUser.exists ? existingUser.data()?.role : undefined
+    const existingInstitutionId = existingUser.exists ? existingUser.data()?.institutionId : undefined
     const resolvedRoleSource = existingRole || requestedRole
     const userRole = Object.values(UserRole).includes(resolvedRoleSource as UserRole)
       ? (resolvedRoleSource as UserRole)
       : UserRole.STUDENT
+    const resolvedInstitutionId = existingInstitutionId || userProfile?.institutionId || null
+
+    if (userRole !== UserRole.MASTER_ADMIN) {
+      if (!resolvedInstitutionId && !existingUser.exists) {
+        const apiError = new ApiError('Institution is required for this role', 'MISSING_INSTITUTION', 400)
+        return NextResponse.json(apiError, { status: apiError.statusCode ?? 400 })
+      }
+
+      if (resolvedInstitutionId) {
+        const institutionRef = adminDb.collection('institutions').doc(resolvedInstitutionId)
+        const institutionSnapshot = await institutionRef.get()
+        const isActiveInstitution = institutionSnapshot.exists && institutionSnapshot.data()?.isActive !== false
+
+        if (!isActiveInstitution) {
+          const apiError = new ApiError('Institution is invalid or inactive', 'INVALID_INSTITUTION', 400)
+          return NextResponse.json(apiError, { status: apiError.statusCode ?? 400 })
+        }
+      }
+    }
+
     const derivedName = userProfile?.fullName || userProfile?.displayName || decodedToken.name || userEmail.split('@')[0]
 
+    const userPayload = {
+      uid: userId,
+      id: userId,
+      fullName: derivedName,
+      displayName: userProfile?.displayName || decodedToken.name || derivedName,
+      email: userEmail,
+      role: userRole,
+      status: UserStatus.ACTIVE,
+      language: 'en',
+      mfaEnabled: false,
+      institutionId: resolvedInstitutionId,
+      photoURL: decodedToken.picture || null,
+      isActive: true,
+      emailVerified: Boolean(decodedToken.email_verified),
+      lastLogin: new Date(),
+      updatedAt: new Date(),
+      ...(existingUser.exists
+        ? {}
+        : {
+            createdAt: new Date(),
+            metadata: {
+              signUpMethod: userProfile?.signUpMethod || 'email',
+              loginCount: 1,
+            },
+          }),
+    }
+
     await userRef.set(
-      {
-        uid: userId,
-        id: userId,
-        fullName: derivedName,
-        displayName: userProfile?.displayName || decodedToken.name || derivedName,
-        email: userEmail,
-        role: userRole,
-        status: UserStatus.ACTIVE,
-        language: 'en',
-        mfaEnabled: false,
-        institutionId: userProfile?.institutionId || null,
-        photoURL: decodedToken.picture || null,
-        isActive: true,
-        emailVerified: Boolean(decodedToken.email_verified),
-        lastLogin: new Date(),
-        updatedAt: new Date(),
-        ...(existingUser.exists
-          ? {}
-          : {
-              createdAt: new Date(),
-              metadata: {
-                signUpMethod: userProfile?.signUpMethod || 'email',
-                loginCount: 1,
-              },
-            }),
-      },
+      userPayload,
       { merge: true }
     )
+
+    // Keep institution-scoped copy for tenant-local queries.
+    if (resolvedInstitutionId) {
+      await adminDb
+        .collection('institutions')
+        .doc(resolvedInstitutionId)
+        .collection('users')
+        .doc(userId)
+        .set(userPayload, { merge: true })
+    }
 
     // Create session cookie (valid for 5 days by default)
     const sessionCookie = await createSessionCookie(idToken)
@@ -100,6 +133,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         userId,
         email: userEmail,
         role: userRole,
+        institutionId: resolvedInstitutionId,
         message: 'Session created successfully'
       },
       { status: 200 }

@@ -25,6 +25,7 @@ export default function LoginPage() {
     if (authStore.isAuthenticated && authStore.user) {
       const roleDashboards: Record<string, string> = {
         admin: '/admin/dashboard',
+        master_admin: '/master-admin/institutions',
         faculty: '/faculty/dashboard',
         student: '/student/dashboard'
       }
@@ -39,6 +40,7 @@ export default function LoginPage() {
     } else {
       const roleDashboards: Record<string, string> = {
         admin: '/admin/dashboard',
+        master_admin: '/master-admin/institutions',
         faculty: '/faculty/dashboard',
         student: '/student/dashboard'
       }

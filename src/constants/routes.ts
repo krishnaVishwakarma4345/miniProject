@@ -87,6 +87,14 @@ export const ADMIN_ROUTES = {
 } as const;
 
 /**
+ * Master admin routes (authenticated, role: master_admin)
+ * Institution tenancy administration only
+ */
+export const MASTER_ADMIN_ROUTES = {
+  INSTITUTIONS: "/master-admin/institutions",
+} as const;
+
+/**
  * API route prefixes
  * Used for fetching data, form submissions, file uploads
  */
@@ -212,6 +220,9 @@ export const ROLE_ROUTES = {
     ADMIN_ROUTES.AUDIT_LOG,
     ADMIN_ROUTES.SYSTEM_HEALTH,
   ],
+  master_admin: [
+    MASTER_ADMIN_ROUTES.INSTITUTIONS,
+  ],
 } as const;
 
 /**
@@ -222,6 +233,7 @@ export const LOGIN_REDIRECTS = {
   student: STUDENT_ROUTES.DASHBOARD,
   faculty: FACULTY_ROUTES.DASHBOARD,
   admin: ADMIN_ROUTES.DASHBOARD,
+  master_admin: MASTER_ADMIN_ROUTES.INSTITUTIONS,
 } as const;
 
 /**
@@ -233,4 +245,5 @@ export const ROUTE_GROUPS = {
   STUDENT: "(student)",
   FACULTY: "(faculty)",
   ADMIN: "(admin)",
+  MASTER_ADMIN: "(master-admin)",
 } as const;

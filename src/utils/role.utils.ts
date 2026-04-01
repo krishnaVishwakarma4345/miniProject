@@ -242,6 +242,10 @@ export function getAvailableFeatures(role: UserRole): string[] {
       "generate_reports",
       "manage_settings",
     ],
+    [UserRole.MASTER_ADMIN]: [
+      "manage_institutions",
+      "view_institutions",
+    ],
   };
 
   return features[role] || [];
@@ -257,6 +261,7 @@ export function getRedirectUrlByRole(role: UserRole): string {
     [UserRole.STUDENT]: "/student/dashboard",
     [UserRole.FACULTY]: "/faculty/dashboard",
     [UserRole.ADMIN]: "/admin/dashboard",
+    [UserRole.MASTER_ADMIN]: "/master-admin/institutions",
   };
 
   return redirects[role] || "/";
@@ -272,6 +277,7 @@ export function getRoleDisplayName(role: UserRole): string {
     [UserRole.STUDENT]: "Student",
     [UserRole.FACULTY]: "Faculty",
     [UserRole.ADMIN]: "Administrator",
+    [UserRole.MASTER_ADMIN]: "Master Administrator",
   };
 
   return names[role] || role;
@@ -290,12 +296,12 @@ export function canChangeRole(
   changerRole: UserRole
 ): boolean {
   // Only admins can change roles
-  if (changerRole !== UserRole.ADMIN) {
+  if (changerRole !== UserRole.ADMIN && changerRole !== UserRole.MASTER_ADMIN) {
     return false;
   }
 
-  // Admin cannot be changed to other roles (needs super-admin or deletion)
-  if (fromRole === UserRole.ADMIN) {
+  // Admin roles require master admin privileges to change.
+  if ((fromRole === UserRole.ADMIN || fromRole === UserRole.MASTER_ADMIN) && changerRole !== UserRole.MASTER_ADMIN) {
     return false;
   }
 

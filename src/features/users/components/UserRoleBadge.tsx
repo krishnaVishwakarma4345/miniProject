@@ -9,6 +9,7 @@ export interface UserRoleBadgeProps {
 
 const roleStyles: Record<UserRole, { label: string; className: string }> = {
 	admin: { label: "Admin", className: "bg-slate-900 text-white" },
+	master_admin: { label: "Master Admin", className: "bg-orange-100 text-orange-700" },
 	faculty: { label: "Faculty", className: "bg-amber-100 text-amber-700" },
 	student: { label: "Student", className: "bg-sky-100 text-sky-700" },
 }

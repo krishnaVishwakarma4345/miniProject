@@ -29,6 +29,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
   '/student': ['student'],
   '/faculty': ['faculty'],
   '/admin': ['admin'],
+  '/master-admin': ['master_admin'],
 };
 
 /**
@@ -163,6 +164,9 @@ export async function proxy(request: NextRequest) {
           break;
         case 'admin':
           unauthorizedUrl.pathname = '/admin/dashboard';
+          break;
+        case 'master_admin':
+          unauthorizedUrl.pathname = '/master-admin/institutions';
           break;
         default:
           unauthorizedUrl.pathname = '/login';

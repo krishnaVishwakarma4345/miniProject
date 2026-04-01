@@ -19,6 +19,7 @@ export enum UserRole {
   STUDENT = "student",
   FACULTY = "faculty",
   ADMIN = "admin",
+  MASTER_ADMIN = "master_admin",
 }
 
 /**

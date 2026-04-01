@@ -77,6 +77,7 @@ export function AuthGuard({
           const timeout = setTimeout(() => {
             const roleDashboards: Record<string, string> = {
               admin: '/admin/dashboard',
+              master_admin: '/master-admin/institutions',
               faculty: '/faculty/dashboard',
               student: '/student/dashboard'
             }
