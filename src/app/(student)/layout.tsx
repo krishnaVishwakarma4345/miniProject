@@ -17,14 +17,23 @@ const NAV_LINKS = [
 export default function StudentLayout({ children }: { children: ReactNode }) {
 	const pathname = usePathname()
 	const router = useRouter()
-	const { user, logout } = useAuth()
-	const { isStudent } = useRole()
+	const { user, logout, isLoading } = useAuth()
+	const { role, isStudent } = useRole()
 
 	useEffect(() => {
-		if (!isStudent) {
+		if (isLoading) {
+			return
+		}
+
+		if (!user) {
+			router.replace('/login')
+			return
+		}
+
+		if (!isStudent || role !== 'student') {
 			router.replace('/login')
 		}
-	}, [isStudent, router])
+	}, [isLoading, isStudent, role, router, user])
 
 	return (
 		<div className='flex min-h-screen bg-slate-50'>

@@ -59,18 +59,9 @@ export function useAuth(): UseAuthReturn {
         unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
           if (!isMounted) return
           const latestStore = useAuthStore.getState()
-          const hasSessionCookie = typeof document !== 'undefined'
-            ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
-            : false
           if (firebaseUser) {
-            if (hasSessionCookie) {
-              latestStore.setIsAuthenticated(true)
-              latestStore.setSessionValid(true)
-            } else {
-              // Firebase local auth can persist without an app session cookie.
-              // Avoid redirect loops by treating this state as signed-out for protected routing.
-              latestStore.clearSession()
-            }
+            latestStore.setIsAuthenticated(true)
+            latestStore.setSessionValid(true)
           } else {
             // User signed out
             latestStore.clearSession()

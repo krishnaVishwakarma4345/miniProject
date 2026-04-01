@@ -22,11 +22,7 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    const hasSessionCookie = typeof document !== 'undefined'
-      ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
-      : false
-
-    if (authStore.isAuthenticated && authStore.user && hasSessionCookie) {
+    if (authStore.isAuthenticated && authStore.user) {
       const roleDashboards: Record<string, string> = {
         admin: '/admin/dashboard',
         faculty: '/faculty/dashboard',

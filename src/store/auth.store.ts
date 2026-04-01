@@ -92,11 +92,10 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null })
         try {
           const state = get()
-          const hasSessionCookie = typeof document !== 'undefined'
-            ? document.cookie.split(';').some((cookie) => cookie.trim().startsWith('session='))
-            : false
 
-          if (state.user && hasSessionCookie) {
+          // Session cookie is HttpOnly, so client-side JS cannot read it.
+          // Trust persisted user state and Firebase auth listener for hydration.
+          if (state.user) {
             set({ sessionValid: true, isAuthenticated: true })
           } else {
             set({ user: null, isAuthenticated: false, sessionValid: false })

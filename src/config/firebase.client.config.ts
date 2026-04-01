@@ -10,6 +10,10 @@ import { getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } fr
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { firebaseClientConfig, appConfig } from './env';
 
+const useFirebaseEmulator =
+  process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true' ||
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
+
 // Prevent multiple initializations
 let firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseClientConfig);
 
@@ -42,7 +46,7 @@ if (typeof window !== 'undefined') {
 /**
  * Configure Firebase Authentication
  */
-if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
+if (appConfig.isDevelopment && useFirebaseEmulator) {
   try {
     if (auth) {
       connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
@@ -56,7 +60,7 @@ if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'tr
 /**
  * Configure Firestore
  */
-if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
+if (appConfig.isDevelopment && useFirebaseEmulator) {
   try {
     if (db) {
       connectFirestoreEmulator(db, 'localhost', 8080);
@@ -87,7 +91,7 @@ if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'tr
 /**
  * Configure Storage (if using emulator in dev)
  */
-if (appConfig.isDevelopment && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true') {
+if (appConfig.isDevelopment && useFirebaseEmulator) {
   try {
     if (storage) {
       connectStorageEmulator(storage, 'localhost', 9199);

@@ -48,12 +48,13 @@ export const registerWithEmail = async (
   institutionId: string
 ): Promise<UserCredential> => {
   try {
+    const normalizedEmail = email.trim().toLowerCase();
     const auth = await getAuthInstance();
 
     // Create user in Auth
     const userCredential = await createUserWithEmailAndPassword(
       auth,
-      email,
+      normalizedEmail,
       password
     );
 
@@ -68,7 +69,7 @@ export const registerWithEmail = async (
       const newUser: Omit<User, "id"> = {
         uid: userCredential.user.uid,
         fullName: displayName,
-        email,
+        email: normalizedEmail,
         displayName,
         role,
         status: UserStatus.ACTIVE,

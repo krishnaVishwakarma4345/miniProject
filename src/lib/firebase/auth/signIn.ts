@@ -28,6 +28,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   "auth/popup-blocked": "Pop-up was blocked. Please allow popups and try again.",
   "auth/operation-not-allowed": "Google sign-in is not available.",
   "auth/invalid-credential": "Invalid credentials. Please try again.",
+  "auth/invalid-login-credentials": "Invalid email or password.",
 };
 
 /**
@@ -42,19 +43,18 @@ export const signInWithEmail = async (
   password: string
 ): Promise<UserCredential> => {
   try {
+    const normalizedEmail = email.trim().toLowerCase();
     const auth = await getAuthInstance();
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
     return userCredential;
   } catch (error) {
     const authError = error as AuthError;
     const message =
       ERROR_MESSAGES[authError.code] || "Failed to sign in. Please try again.";
-    
-    throw {
-      code: authError.code,
-      message,
-      originalError: error,
-    } as ApiError;
+
+    throw new ApiError(message, authError.code || "LOGIN_ERROR", 401, {
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 
@@ -85,11 +85,9 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
       ERROR_MESSAGES[authError.code] ||
       "Failed to sign in with Google. Please try again.";
 
-    throw {
-      code: authError.code,
-      message,
-      originalError: error,
-    } as ApiError;
+    throw new ApiError(message, authError.code || "GOOGLE_LOGIN_ERROR", 401, {
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 

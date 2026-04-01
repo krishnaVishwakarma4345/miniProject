@@ -53,7 +53,7 @@ const getRouteBase = (pathname: string): string | null => {
  */
 const verifySessionCookie = async (
   request: NextRequest
-): Promise<{ uid: string; role: string } | null> => {
+): Promise<{ uid: string; role: string; unverifiable?: boolean } | null> => {
   try {
     // Extract session cookie from request headers
     const cookieHeader = request.headers.get('cookie')
@@ -75,6 +75,13 @@ const verifySessionCookie = async (
     const adminAuth = getAdminAuthIfInitialized()
     if (!adminAuth) {
       console.warn('🔐 Middleware: Admin Auth not initialized')
+
+      // In local development, avoid false redirects after successful login when
+      // middleware cannot verify with Admin SDK in edge runtime.
+      if (process.env.NODE_ENV !== 'production') {
+        return { uid: 'session-cookie-present', role: 'student', unverifiable: true }
+      }
+
       return null
     }
 
@@ -127,6 +134,12 @@ export async function proxy(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     return NextResponse.redirect(loginUrl);
+  }
+
+  // If the session cookie exists but cannot be verified in edge middleware,
+  // let the request continue and defer strict validation to API routes/pages.
+  if (session.unverifiable) {
+    return NextResponse.next();
   }
 
   // Extract role from session

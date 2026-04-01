@@ -30,6 +30,9 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let firestore: Firestore | null = null;
 let firestoreEmulatorConnected = false;
+const useFirebaseEmulator =
+  process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === "true" ||
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true";
 
 /**
  * Initialize Firebase App (singleton pattern)
@@ -63,10 +66,7 @@ const initializeAuth = async (): Promise<Auth> => {
   await setPersistence(auth, browserLocalPersistence);
 
   // Connect to emulator in development if FIREBASE_USE_EMULATOR is true
-  if (
-    process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" &&
-    !auth.emulatorConfig
-  ) {
+  if (useFirebaseEmulator && !auth.emulatorConfig) {
     connectAuthEmulator(auth, "http://localhost:9099", {
       disableWarnings: true,
     });
@@ -104,10 +104,7 @@ const initializeFirestore = async (): Promise<Firestore> => {
   }
 
   // Connect to emulator in development
-  if (
-    process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" &&
-    !firestoreEmulatorConnected
-  ) {
+  if (useFirebaseEmulator && !firestoreEmulatorConnected) {
     connectFirestoreEmulator(firestore, "localhost", 8080);
     firestoreEmulatorConnected = true;
   }
