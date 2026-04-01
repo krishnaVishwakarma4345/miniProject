@@ -98,13 +98,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 
 /**
  * Available roles for registration
- * Users can only sign up as Student or Faculty
- * Admin accounts are created by admins only
+ * Public sign-up is student-only; institute admins promote users later.
  */
-export const PUBLICLY_REGISTRABLE_ROLES = [
-  UserRole.STUDENT,
-  UserRole.FACULTY,
-] as const;
+export const PUBLICLY_REGISTRABLE_ROLES = [UserRole.STUDENT] as const;
 
 /**
  * Role-based feature availability

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
-import { UserRole } from '@/types/user.types'
 import gsap from 'gsap'
 
 export interface RegisterFormProps {
@@ -15,7 +14,7 @@ export interface RegisterFormProps {
  * RegisterForm Component
  * Multi-step registration form with animations
  * Step 1: Email & Password
- * Step 2: Personal Info (Name, Role)
+ * Step 2: Personal Info (Name)
  * Step 3: Institution Selection
  * 
  * Features:
@@ -23,7 +22,7 @@ export interface RegisterFormProps {
  * - Progress bar animation
  * - Form validation with error shakes
  * - Email availability check
- * - Role selection with visual feedback
+ * - Student-only registration with admin-managed role upgrades
  */
 export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   const { register, isLoading, error: authError } = useAuth()
@@ -33,7 +32,6 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [role, setRole] = useState<UserRole>(UserRole.STUDENT)
   const [institutionId, setInstitutionId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [emailAvailable, setEmailAvailable] = useState(true)
@@ -190,7 +188,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
     setIsSubmitting(true)
 
     try {
-      await register(email, password, displayName, role, institutionId)
+      await register(email, password, displayName, institutionId)
 
       // Success animation
       if (formRef.current) {
@@ -370,25 +368,8 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                 )}
               </div>
 
-              {/* Role Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Role</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[UserRole.STUDENT, UserRole.FACULTY].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRole(r)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        role === r
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className="font-medium text-gray-900">{r.charAt(0).toUpperCase() + r.slice(1)}</div>
-                    </button>
-                  ))}
-                </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                Everyone starts as a student. Institute admins can promote accounts to faculty later.
               </div>
             </motion.div>
           )}

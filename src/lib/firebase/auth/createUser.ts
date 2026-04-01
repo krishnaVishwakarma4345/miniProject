@@ -35,7 +35,6 @@ const ERROR_MESSAGES: Record<string, string> = {
  * @param email - User email
  * @param password - User password
  * @param displayName - User's full name
- * @param role - User role (student, faculty, admin)
  * @param institutionId - Institution ID for multi-tenant support
  * @returns UserCredential on success
  * @throws ApiError on failure
@@ -44,7 +43,6 @@ export const registerWithEmail = async (
   email: string,
   password: string,
   displayName: string,
-  role: UserRole,
   institutionId: string
 ): Promise<UserCredential> => {
   try {
@@ -71,7 +69,7 @@ export const registerWithEmail = async (
         fullName: displayName,
         email: normalizedEmail,
         displayName,
-        role,
+        role: UserRole.STUDENT,
         status: UserStatus.ACTIVE,
         language: "en",
         mfaEnabled: false,
@@ -115,13 +113,11 @@ export const registerWithEmail = async (
 
 /**
  * Register user with Google OAuth
- * @param role - User role (student, faculty, admin)
  * @param institutionId - Institution ID for multi-tenant support
  * @returns UserCredential on success
  * @throws ApiError on failure
  */
 export const registerWithGoogle = async (
-  role: UserRole,
   institutionId: string
 ): Promise<UserCredential> => {
   try {
@@ -143,7 +139,7 @@ export const registerWithGoogle = async (
         fullName: userCredential.user.displayName || "",
         email: userCredential.user.email || "",
         displayName: userCredential.user.displayName || "",
-        role,
+        role: UserRole.STUDENT,
         status: UserStatus.ACTIVE,
         language: "en",
         mfaEnabled: false,

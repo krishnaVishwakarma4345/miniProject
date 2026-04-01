@@ -58,7 +58,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Extract user info from token
     const userId = decodedToken.uid
-    const roleFromProfile = userProfile?.role
     const roleFromTokenClaims = (decodedToken.role as string | undefined) || (decodedToken.custom_claims?.role as string | undefined)
     const institutionFromTokenClaims = (decodedToken.institutionId as string | undefined) || (decodedToken.org as string | undefined) || (decodedToken.custom_claims?.institutionId as string | undefined) || (decodedToken.custom_claims?.org as string | undefined)
     const userEmail = decodedToken.email
@@ -117,11 +116,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const resolvedRole = isBootstrapMasterAdmin
       ? UserRole.MASTER_ADMIN
-      : normalizeRole(scopedUserData?.role)
-        || normalizeRole(existingData?.role)
+      : normalizeRole(existingData?.role)
+        || normalizeRole(scopedUserData?.role)
         || normalizeRole(roleFromAuthClaims)
         || normalizeRole(roleFromTokenClaims)
-        || normalizeRole(roleFromProfile)
         || UserRole.STUDENT
 
     const resolvedInstitutionId =

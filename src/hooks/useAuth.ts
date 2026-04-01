@@ -20,7 +20,7 @@ export type UseAuthReturn = {
   // Auth methods
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
-  register: (email: string, password: string, displayName: string, role: UserRole, institutionId: string) => Promise<void>
+  register: (email: string, password: string, displayName: string, institutionId: string) => Promise<void>
   registerWithGoogleAuth: () => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
@@ -246,7 +246,6 @@ export function useAuth(): UseAuthReturn {
     email: string,
     password: string,
     displayName: string,
-    role: UserRole,
     institutionId: string
   ): Promise<void> => {
     authStore.setIsLoading(true)
@@ -258,7 +257,6 @@ export function useAuth(): UseAuthReturn {
         email,
         password,
         displayName,
-        role,
         institutionId
       )
 
@@ -273,7 +271,7 @@ export function useAuth(): UseAuthReturn {
           userProfile: {
             fullName: displayName,
             displayName,
-            role,
+            role: UserRole.STUDENT,
             institutionId,
             signUpMethod: 'email',
           },
@@ -352,7 +350,7 @@ export function useAuth(): UseAuthReturn {
 
     try {
       // Step 1: Register with Google
-      const userCredential = await registerWithGoogle(UserRole.STUDENT, '')
+      const userCredential = await registerWithGoogle('')
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
@@ -364,6 +362,7 @@ export function useAuth(): UseAuthReturn {
           userProfile: {
             fullName: userCredential.user.displayName || 'User',
             displayName: userCredential.user.displayName || 'User',
+            role: UserRole.STUDENT,
             signUpMethod: 'google',
           },
         })
