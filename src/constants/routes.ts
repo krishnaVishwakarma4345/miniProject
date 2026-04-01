@@ -53,6 +53,7 @@ export const STUDENT_ROUTES = {
  */
 export const FACULTY_ROUTES = {
   DASHBOARD: "/faculty/dashboard",
+  ANALYTICS: "/faculty/analytics",
   REVIEW_QUEUE: "/faculty/review",
   REVIEW_DETAIL: (id: string) => `/faculty/review/${id}`,
   STUDENTS: "/faculty/students",
@@ -200,6 +201,7 @@ export const ROLE_ROUTES = {
   ],
   faculty: [
     FACULTY_ROUTES.DASHBOARD,
+    FACULTY_ROUTES.ANALYTICS,
     FACULTY_ROUTES.REVIEW_QUEUE,
     FACULTY_ROUTES.STUDENTS,
     FACULTY_ROUTES.PORTFOLIOS,

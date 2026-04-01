@@ -3,7 +3,7 @@ import { Activity, ActivityStatus, ApiResponse, UserRole, UserStatus } from '@/t
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
-import { AnalyticsOverview, AnalyticsRange } from '@/features/analytics/types/analytics.types'
+import { AnalyticsOverview, AnalyticsRange, StudentProgressDatum } from '@/features/analytics/types/analytics.types'
 import { ensureInstitutionActivityMirror, getInstitutionActivitiesCollection } from '@/lib/firebase/firestore/activity-tenant.utils'
 
 interface UserProfile {
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
 		const resolvedAdminProfile = adminProfile ? { ...adminProfile, institutionId: adminProfile.institutionId || claimInstitutionId } : null
 		const role = adminProfile?.role || (decoded.role as UserRole | undefined) || (decoded.custom_claims?.role as UserRole | undefined) || UserRole.STUDENT
 
-		if (role !== UserRole.ADMIN) {
+		if (role !== UserRole.ADMIN && role !== UserRole.FACULTY) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
@@ -215,6 +215,39 @@ export async function GET(request: NextRequest) {
 			.sort((a, b) => b.pointsAwarded - a.pointsAwarded)
 			.slice(0, 5)
 
+		const studentProgressMap = new Map<string, StudentProgressDatum>()
+		activities.forEach((activity) => {
+			const existing = studentProgressMap.get(activity.submittedBy) || {
+				studentId: activity.submittedBy,
+				name: activity.submittedByName,
+				department: studentDepartmentByUid.get(activity.submittedBy),
+				totalSubmissions: 0,
+				totalCredits: 0,
+				submissions: [],
+			}
+
+			existing.totalSubmissions += 1
+			existing.totalCredits += activity.pointsAwarded || 0
+			existing.submissions.push({
+				activityId: activity.id,
+				title: activity.title,
+				category: activity.category,
+				status: activity.status,
+				activityDate: activity.activityDate,
+				createdAt: activity.createdAt,
+				pointsAwarded: activity.pointsAwarded || 0,
+			})
+
+			studentProgressMap.set(activity.submittedBy, existing)
+		})
+
+		const studentProgress = Array.from(studentProgressMap.values())
+			.map((student) => ({
+				...student,
+				submissions: student.submissions.sort((a, b) => b.createdAt - a.createdAt),
+			}))
+			.sort((a, b) => b.totalSubmissions - a.totalSubmissions)
+
 		const data: AnalyticsOverview = {
 			metrics,
 			participation,
@@ -222,6 +255,7 @@ export async function GET(request: NextRequest) {
 			departments,
 			trend,
 			topStudents,
+			studentProgress,
 		}
 
 		return NextResponse.json<ApiResponse<AnalyticsOverview>>({

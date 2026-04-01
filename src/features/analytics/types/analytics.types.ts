@@ -41,6 +41,25 @@ export interface TopStudentDatum {
 	pointsAwarded?: number
 }
 
+export interface StudentSubmissionDatum {
+	activityId: string
+	title: string
+	category: ActivityCategory
+	status: string
+	activityDate: number
+	createdAt: number
+	pointsAwarded: number
+}
+
+export interface StudentProgressDatum {
+	studentId: string
+	name: string
+	department?: string
+	totalSubmissions: number
+	totalCredits: number
+	submissions: StudentSubmissionDatum[]
+}
+
 export interface AnalyticsOverview {
 	metrics: AnalyticsMetric[]
 	participation: ParticipationDatum[]
@@ -48,4 +67,5 @@ export interface AnalyticsOverview {
 	departments: DepartmentBreakdownDatum[]
 	trend: MonthlyTrendDatum[]
 	topStudents: TopStudentDatum[]
+	studentProgress: StudentProgressDatum[]
 }
