@@ -46,9 +46,18 @@ const initializeFirebaseAdminApp = (): App => {
   }
 
   try {
+    const clientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+    const adminProjectId = FIREBASE_ADMIN_CONFIG.projectId?.trim();
+
+    if (clientProjectId && adminProjectId && clientProjectId !== adminProjectId) {
+      throw new Error(
+        `Firebase project mismatch: NEXT_PUBLIC_FIREBASE_PROJECT_ID=${clientProjectId} but admin project is ${adminProjectId}.`
+      );
+    }
+
     app = initializeApp({
       credential: cert(FIREBASE_ADMIN_CONFIG as ServiceAccount),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      projectId: FIREBASE_ADMIN_CONFIG.projectId,
     });
 
     return app;

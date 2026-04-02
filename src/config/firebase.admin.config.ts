@@ -13,6 +13,48 @@ let adminApp: any = null;
 let adminAuth: any = null;
 let adminDb: any = null;
 
+const readServerEnv = (...keys: string[]): string => {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+    if (value) return value;
+  }
+  return '';
+};
+
+const resolveFirebaseAdminConfig = () => {
+  const projectId =
+    readServerEnv('FIREBASE_ADMIN_PROJECT_ID', 'FIREBASE_PROJECT_ID', 'GOOGLE_CLOUD_PROJECT') ||
+    firebaseAdminConfig.projectId;
+
+  const clientEmail =
+    readServerEnv('FIREBASE_ADMIN_CLIENT_EMAIL', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL') ||
+    firebaseAdminConfig.clientEmail;
+
+  const privateKeyRaw =
+    readServerEnv('FIREBASE_ADMIN_PRIVATE_KEY', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY') ||
+    firebaseAdminConfig.privateKey;
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey: privateKeyRaw.replace(/\\n/g, '\n'),
+  };
+};
+
+const assertFirebaseAdminConfig = (config: { projectId: string; clientEmail: string; privateKey: string }) => {
+  const missing: string[] = [];
+
+  if (!config.projectId) missing.push('FIREBASE_ADMIN_PROJECT_ID or FIREBASE_PROJECT_ID');
+  if (!config.clientEmail) missing.push('FIREBASE_ADMIN_CLIENT_EMAIL or FIREBASE_CLIENT_EMAIL');
+  if (!config.privateKey) missing.push('FIREBASE_ADMIN_PRIVATE_KEY or FIREBASE_PRIVATE_KEY');
+
+  if (missing.length > 0) {
+    throw new Error(`Firebase Admin env missing: ${missing.join(', ')}`);
+  }
+};
+
+const resolvedAdminConfig = resolveFirebaseAdminConfig();
+
 /**
  * Initialize Firebase Admin SDK
  * Only runs on server-side (Node.js runtime)
@@ -32,13 +74,16 @@ const initializeAdmin = () => {
   }
 
   try {
+    assertFirebaseAdminConfig(resolvedAdminConfig);
+
     // Initialize with service account credentials
     adminApp = initializeApp({
       credential: cert({
-        projectId: firebaseAdminConfig.projectId,
-        clientEmail: firebaseAdminConfig.clientEmail,
-        privateKey: firebaseAdminConfig.privateKey,
+        projectId: resolvedAdminConfig.projectId,
+        clientEmail: resolvedAdminConfig.clientEmail,
+        privateKey: resolvedAdminConfig.privateKey,
       }),
+      projectId: resolvedAdminConfig.projectId,
     });
 
     adminAuth = getAuth(adminApp);
@@ -46,7 +91,7 @@ const initializeAdmin = () => {
 
     // Configure Firestore settings
     adminDb.settings({
-      projectId: firebaseAdminConfig.projectId,
+      projectId: resolvedAdminConfig.projectId,
       ignoreUndefinedProperties: true,
     });
 
@@ -83,7 +128,7 @@ const getAdminDb = () => {
   return adminDb;
 };
 
-export const FIREBASE_ADMIN_CONFIG = firebaseAdminConfig;
+export const FIREBASE_ADMIN_CONFIG = resolvedAdminConfig;
 
 export { getAdminApp, getAdminAuth, getAdminDb };
 export default { getAdminApp, getAdminAuth, getAdminDb };
