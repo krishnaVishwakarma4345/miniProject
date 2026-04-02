@@ -12,6 +12,7 @@ const NAV_LINKS = [
 	{ href: '/student/dashboard', label: 'Dashboard' },
 	{ href: '/student/activities', label: 'Activities' },
 	{ href: '/student/portfolio', label: 'Portfolio' },
+	{ href: '/student/profile', label: 'Profile' },
 ]
 
 export default function StudentLayout({ children }: { children: ReactNode }) {
@@ -77,8 +78,13 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
 							<p className='text-xs uppercase tracking-[0.4em] text-slate-400'>Smart Student Hub</p>
 							<h2 className='text-lg font-semibold text-slate-900'>{NAV_LINKS.find((link) => pathname?.startsWith(link.href))?.label || 'Student'}</h2>
 						</div>
-						<Button variant='outline' size='sm' className='lg:hidden' onClick={() => router.push('/student/activities/add')}>
-							+ Add activity
+						<Button
+							variant='outline'
+							size='sm'
+							className='lg:hidden'
+							onClick={() => router.push(pathname?.startsWith('/student/profile') ? '/student/profile/edit' : '/student/activities/add')}
+						>
+							{pathname?.startsWith('/student/profile') ? 'Edit profile' : '+ Add activity'}
 						</Button>
 					</div>
 				</header>

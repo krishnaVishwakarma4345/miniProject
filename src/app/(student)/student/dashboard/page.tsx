@@ -36,6 +36,9 @@ export default function StudentDashboardPage() {
 						<p className='text-sm text-slate-600'>Track approvals, add new achievements, and keep your portfolio fresh.</p>
 					</div>
 					<div className='flex gap-3'>
+						<Link href='/student/profile'>
+							<Button variant='outline'>Profile</Button>
+						</Link>
 						<Button variant='outline' onClick={() => refresh()} loading={isLoading}>
 							Refresh
 						</Button>

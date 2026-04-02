@@ -25,6 +25,11 @@ export default function FacultyDashboardPage() {
 				subtitle="Monitor review load, keep an eye on assignments, and dive into the queue when you're ready."
 				actions={
 					<div className="flex items-center gap-2">
+						<Link href="/faculty/profile" className="inline-flex">
+							<Button variant="outline" size="sm">
+								Profile
+							</Button>
+						</Link>
 						<Button variant="outline" size="sm" onClick={() => refresh()}>
 							Refresh data
 						</Button>

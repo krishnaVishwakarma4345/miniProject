@@ -20,7 +20,7 @@ export default function StudentPortfolioPage() {
 
 	return (
 		<div className='space-y-6'>
-			<section className='rounded-[32px] border border-slate-200 bg-white/90 p-8 shadow-sm'>
+			<section className='rounded-4xl border border-slate-200 bg-white/90 p-8 shadow-sm'>
 				<h1 className='text-2xl font-semibold text-slate-900'>Portfolio</h1>
 				<p className='text-sm text-slate-500'>Generate a curated page of approved activities — perfect for placements and internships.</p>
 				<div className='mt-4 flex flex-wrap gap-3'>

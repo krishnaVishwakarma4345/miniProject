@@ -17,6 +17,7 @@ const NAV_LINKS = [
 	{ label: "Overview", href: "/faculty/dashboard" },
 	{ label: "Review queue", href: "/faculty/review" },
 	{ label: "Analytics", href: "/faculty/analytics" },
+	{ label: "Profile", href: "/faculty/profile" },
 ]
 
 export default function FacultyLayout({ children }: FacultyLayoutProps) {
@@ -80,6 +81,7 @@ export default function FacultyLayout({ children }: FacultyLayoutProps) {
 								<p className="text-sm font-semibold text-slate-900">{user?.displayName ?? "Faculty"}</p>
 								<p className="text-xs text-slate-500">{user?.email}</p>
 							</div>
+							<Button variant="outline" size="sm" onClick={() => router.push("/faculty/profile")}>Profile</Button>
 							<Button variant="outline" size="sm" loading={isSigningOut} onClick={handleLogout}>
 								Logout
 							</Button>
