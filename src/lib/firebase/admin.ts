@@ -50,8 +50,9 @@ const initializeFirebaseAdminApp = (): App => {
     const adminProjectId = FIREBASE_ADMIN_CONFIG.projectId?.trim();
 
     if (clientProjectId && adminProjectId && clientProjectId !== adminProjectId) {
-      throw new Error(
-        `Firebase project mismatch: NEXT_PUBLIC_FIREBASE_PROJECT_ID=${clientProjectId} but admin project is ${adminProjectId}.`
+      console.warn(
+        `Firebase project mismatch detected: NEXT_PUBLIC_FIREBASE_PROJECT_ID=${clientProjectId} but admin project is ${adminProjectId}. ` +
+          'Server routes will continue with admin credentials, but client auth may fail until env values are aligned.'
       );
     }
 

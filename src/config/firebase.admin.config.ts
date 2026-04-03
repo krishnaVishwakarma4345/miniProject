@@ -13,6 +13,17 @@ let adminApp: any = null;
 let adminAuth: any = null;
 let adminDb: any = null;
 
+const normalizePrivateKey = (value: string): string => {
+  const trimmed = value.trim();
+  const unwrapped =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+
+  return unwrapped.replace(/\\n/g, '\n');
+};
+
 const readServerEnv = (...keys: string[]): string => {
   for (const key of keys) {
     const value = process.env[key]?.trim();
@@ -22,6 +33,28 @@ const readServerEnv = (...keys: string[]): string => {
 };
 
 const resolveFirebaseAdminConfig = () => {
+  const serviceAccountRaw = readServerEnv('FIREBASE_SERVICE_ACCOUNT_JSON', 'GOOGLE_APPLICATION_CREDENTIALS_JSON');
+
+  if (serviceAccountRaw) {
+    try {
+      const parsed = JSON.parse(serviceAccountRaw) as {
+        project_id?: string;
+        client_email?: string;
+        private_key?: string;
+      };
+
+      if (parsed.project_id && parsed.client_email && parsed.private_key) {
+        return {
+          projectId: parsed.project_id,
+          clientEmail: parsed.client_email,
+          privateKey: normalizePrivateKey(parsed.private_key),
+        };
+      }
+    } catch {
+      // Ignore malformed JSON and continue with key-based env resolution.
+    }
+  }
+
   const projectId =
     readServerEnv('FIREBASE_ADMIN_PROJECT_ID', 'FIREBASE_PROJECT_ID', 'GOOGLE_CLOUD_PROJECT') ||
     firebaseAdminConfig.projectId;
@@ -37,7 +70,7 @@ const resolveFirebaseAdminConfig = () => {
   return {
     projectId,
     clientEmail,
-    privateKey: privateKeyRaw.replace(/\\n/g, '\n'),
+    privateKey: normalizePrivateKey(privateKeyRaw),
   };
 };
 
