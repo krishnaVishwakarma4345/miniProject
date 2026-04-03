@@ -1,4 +1,5 @@
 import { UserRole, UserStatus } from "@/types/user.types"
+import { ActivityCategory } from "@/types"
 
 export interface AdminUserFilters {
 	role: UserRole | "all"
@@ -14,6 +15,7 @@ export interface AdminUserSummary {
 	role: UserRole
 	status: UserStatus
 	department?: string
+	reviewCategories?: ActivityCategory[]
 	lastActive?: number
 	totalActivities?: number
 }
@@ -23,4 +25,5 @@ export interface UpdateUserPayload {
 	role?: UserRole
 	status?: UserStatus
 	department?: string
+	reviewCategories?: ActivityCategory[]
 }

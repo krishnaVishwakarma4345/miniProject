@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { UserRole, UserStatus } from "@/types";
+import { ActivityCategory, UserRole, UserStatus } from "@/types";
 
 /**
  * Student profile validation
@@ -120,6 +120,11 @@ export const facultyProfileSchema = z.object({
     )
     .min(1, "At least one specialization is required")
     .max(10, "Maximum 10 specializations allowed"),
+
+  reviewCategories: z
+    .array(z.nativeEnum(ActivityCategory))
+    .max(20, "Too many review categories")
+    .optional(),
 
   bio: z
     .string()

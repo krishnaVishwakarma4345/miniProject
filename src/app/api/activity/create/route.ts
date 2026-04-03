@@ -4,6 +4,7 @@ import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { mirrorActivityDocument } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { findCategoryFacultyReviewer } from '@/lib/review/facultyCategoryAccess'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
 			'Student'
 
 		const now = Date.now()
+		const categoryReviewer = await findCategoryFacultyReviewer(adminDb, institutionId, body.category as ActivityCategory)
 		const normalizedProofFiles = (body.proofFiles || []).map((file, index) => ({
 			...file,
 			order: file.order ?? index,
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
 			certificatesAwards: body.certificatesAwards,
 			status: ActivityStatus.SUBMITTED,
 			proofFiles: normalizedProofFiles,
+			assignedTo: categoryReviewer?.uid,
+			assignedToName: categoryReviewer?.name,
 			isFeatured: false,
 			tags: body.tags || [],
 			createdAt: now,

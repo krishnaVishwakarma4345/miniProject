@@ -185,7 +185,7 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 			initial={{ opacity: 0, y: 12 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.4, ease: 'easeOut' }}
-			className={`space-y-8 rounded-[32px] border border-slate-200 bg-white/80 p-8 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur ${className}`}
+			className={`space-y-8 rounded-4xl border border-slate-200 bg-white/80 p-8 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur ${className}`}
 		>
 			<div className='flex flex-col gap-4 rounded-3xl border border-slate-100 bg-slate-50/60 p-6 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between'>
 				<div>

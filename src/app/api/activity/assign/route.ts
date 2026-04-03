@@ -5,6 +5,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { UserRole } from '@/types/user.types'
 import { getInstitutionActivityDoc } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { canReviewerAccessCategory } from '@/lib/review/facultyCategoryAccess'
 
 interface AssignBody {
 	activityId?: string
@@ -18,6 +19,7 @@ interface UserProfile {
 	institutionId?: string
 	displayName?: string
 	fullName?: string
+	facultyProfile?: { reviewCategories?: string[] }
 }
 
 const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
@@ -102,6 +104,28 @@ export async function POST(request: NextRequest) {
 
 		if (outOfInstitution) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'One or more activities do not belong to your institution', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		if (role === UserRole.FACULTY) {
+			const outOfActorScope = activityDocs.find((doc) => {
+				const data = doc.data() as Activity | undefined
+				return data?.category ? !canReviewerAccessCategory(actorProfile, data.category) : true
+			})
+
+			if (outOfActorScope) {
+				return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You can only assign activities from your review categories', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+			}
+		}
+
+		if (assigneeProfile.role === UserRole.FACULTY) {
+			const nonAssignable = activityDocs.find((doc) => {
+				const data = doc.data() as Activity | undefined
+				return data?.category ? !canReviewerAccessCategory(assigneeProfile, data.category) : true
+			})
+
+			if (nonAssignable) {
+				return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Assignee is not configured for one or more activity categories', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
+			}
 		}
 
 		const now = Date.now()

@@ -5,6 +5,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { UserRole } from '@/types/user.types'
 import { getInstitutionActivityDoc } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { canReviewerAccessCategory } from '@/lib/review/facultyCategoryAccess'
 
 interface RejectBody {
 	activityId: string
@@ -17,6 +18,7 @@ interface UserProfile {
 	institutionId?: string
 	displayName?: string
 	fullName?: string
+	facultyProfile?: { reviewCategories?: string[] }
 }
 
 const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
@@ -72,6 +74,10 @@ export async function POST(request: NextRequest) {
 
 		if (activity.institutionId !== reviewerProfile.institutionId) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You can only review activities from your institution', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		if (role === UserRole.FACULTY && !canReviewerAccessCategory(reviewerProfile, activity.category)) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You are not assigned to review this category', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		const reviewerName =

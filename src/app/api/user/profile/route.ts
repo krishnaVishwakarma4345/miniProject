@@ -3,6 +3,7 @@ import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/admin'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { userProfileUpdateSchema } from '@/schemas/user.schema'
 import { ApiError } from '@/types/api.types'
+import { ActivityCategory } from '@/types'
 import { StudentProfile, FacultyProfile, UserRole } from '@/types/user.types'
 
 type ProfileRecord = {
@@ -54,6 +55,17 @@ const normalizeString = (value: unknown) => {
 	if (typeof value !== 'string') return undefined
 	const trimmed = value.trim()
 	return trimmed.length ? trimmed : undefined
+}
+
+const normalizeReviewCategories = (value: unknown): ActivityCategory[] | undefined => {
+	if (!Array.isArray(value)) {
+		return undefined
+	}
+
+	const allowed = new Set(Object.values(ActivityCategory) as ActivityCategory[])
+	const normalized = value.filter((entry): entry is ActivityCategory => typeof entry === 'string' && allowed.has(entry as ActivityCategory))
+
+	return Array.from(new Set(normalized))
 }
 
 const stripUndefinedValues = <T>(value: T): T => {
@@ -244,6 +256,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
 		if (currentProfile.role === UserRole.FACULTY) {
 			const facultyProfile = currentProfile.facultyProfile || {}
+			const nextReviewCategories = normalizeReviewCategories(updates.facultyProfile?.reviewCategories)
 			nextProfile.facultyProfile = {
 				...facultyProfile,
 				employeeId: normalizeString(updates.facultyProfile?.employeeId) || facultyProfile.employeeId,
@@ -252,6 +265,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 				office: normalizeString(updates.facultyProfile?.office) || facultyProfile.office,
 				phoneExt: normalizeString(updates.facultyProfile?.phoneExt) || facultyProfile.phoneExt,
 				specializations: updates.facultyProfile?.specializations ?? facultyProfile.specializations,
+				reviewCategories: nextReviewCategories ?? facultyProfile.reviewCategories,
 				bio: normalizeString(updates.bio) || normalizeString(updates.facultyProfile?.bio) || facultyProfile.bio,
 				officeHours: normalizeString(updates.facultyProfile?.officeHours) || facultyProfile.officeHours,
 				isAvailable: updates.facultyProfile?.isAvailable ?? facultyProfile.isAvailable ?? true,

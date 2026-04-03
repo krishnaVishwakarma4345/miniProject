@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ApiResponse, UserRole, UserStatus } from '@/types'
+import { ActivityCategory, ApiResponse, UserRole, UserStatus } from '@/types'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
@@ -16,7 +16,7 @@ interface UserProfile {
 	lastLoginAt?: number
 	updatedAt?: number
 	studentProfile?: { department?: string; totalActivities?: number }
-	facultyProfile?: { department?: string }
+	facultyProfile?: { department?: string; reviewCategories?: ActivityCategory[] }
 	adminProfile?: { department?: string }
 }
 
@@ -25,6 +25,7 @@ interface UpdateUserBody {
 	role?: UserRole
 	status?: UserStatus
 	department?: string
+	reviewCategories?: ActivityCategory[]
 }
 
 interface BulkRoleBody {
@@ -105,9 +106,21 @@ const mapUserSummary = (uid: string, user: UserProfile): AdminUserSummary => ({
 	role: user.role || UserRole.STUDENT,
 	status: user.status || UserStatus.ACTIVE,
 	department: user.studentProfile?.department || user.facultyProfile?.department || user.adminProfile?.department,
+	reviewCategories: user.facultyProfile?.reviewCategories,
 	lastActive: user.lastLoginAt,
 	totalActivities: user.studentProfile?.totalActivities,
 })
+
+const normalizeCategories = (value: unknown): ActivityCategory[] | undefined => {
+	if (!Array.isArray(value)) {
+		return undefined
+	}
+
+	const allowed = new Set(Object.values(ActivityCategory) as ActivityCategory[])
+	const normalized = value.filter((entry): entry is ActivityCategory => typeof entry === 'string' && allowed.has(entry as ActivityCategory))
+
+	return Array.from(new Set(normalized))
+}
 
 const getAuthorizedAdminProfile = async (request: NextRequest, adminDb: FirebaseFirestore.Firestore) => {
 	const session = parseSessionCookie(request.headers)
@@ -236,6 +249,20 @@ export async function PATCH(request: NextRequest) {
 				updates.facultyProfile = { ...(targetUser.facultyProfile || {}), department: body.department }
 			} else if (targetUser.role === UserRole.ADMIN) {
 				updates.adminProfile = { ...(targetUser.adminProfile || {}), department: body.department }
+			}
+		}
+
+		const normalizedReviewCategories = normalizeCategories(body.reviewCategories)
+		if (normalizedReviewCategories) {
+			const nextRole = body.role || targetUser.role
+			if (nextRole !== UserRole.FACULTY) {
+				return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Review categories can only be assigned to faculty users', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
+			}
+
+			updates.facultyProfile = {
+				...(targetUser.facultyProfile || {}),
+				...(typeof updates.facultyProfile === 'object' ? updates.facultyProfile as Record<string, unknown> : {}),
+				reviewCategories: normalizedReviewCategories,
 			}
 		}
 

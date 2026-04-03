@@ -5,11 +5,13 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { UserRole } from '@/types/user.types'
 import { getInstitutionActivityDoc } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { canReviewerAccessCategory } from '@/lib/review/facultyCategoryAccess'
 
 interface UserProfile {
   uid?: string
   role?: string
   institutionId?: string
+  facultyProfile?: { reviewCategories?: string[] }
 }
 
 const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
@@ -68,6 +70,10 @@ export async function GET(request: NextRequest) {
     }
 
     if ((userRole === UserRole.FACULTY || userRole === UserRole.ADMIN) && userProfile?.institutionId !== activity.institutionId) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+    }
+
+    if (userRole === UserRole.FACULTY && !canReviewerAccessCategory(userProfile, activity.category)) {
       return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
     }
 

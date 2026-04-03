@@ -5,6 +5,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { UserRole } from '@/types/user.types'
 import { ensureInstitutionActivityMirror, getInstitutionActivitiesCollection } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { canReviewerAccessCategory } from '@/lib/review/facultyCategoryAccess'
 
 interface ReviewQueueResponse {
 	items: Activity[]
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
 		const adminDb = getAdminFirestore()
 
 		const userDoc = await adminDb.collection('users').doc(decoded.uid).get()
-		let userRecord = userDoc.exists ? (userDoc.data() as { role?: string; institutionId?: string }) : null
+		let userRecord = userDoc.exists ? (userDoc.data() as { role?: string; institutionId?: string; facultyProfile?: { reviewCategories?: string[] } }) : null
 
 		if (!userRecord) {
 			const scoped = await adminDb
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 				.get()
 
 			if (!scoped.empty) {
-				userRecord = scoped.docs[0].data() as { role?: string; institutionId?: string }
+				userRecord = scoped.docs[0].data() as { role?: string; institutionId?: string; facultyProfile?: { reviewCategories?: string[] } }
 			}
 		}
 
@@ -92,6 +93,16 @@ export async function GET(request: NextRequest) {
 				}
 
 				const itemStatus = item.status as ActivityStatus
+
+				if (role === UserRole.FACULTY) {
+					if (!item.category) {
+						return false
+					}
+
+					if (!canReviewerAccessCategory(userRecord, item.category)) {
+						return false
+					}
+				}
 
 				if (status) {
 					return itemStatus === status

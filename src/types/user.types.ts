@@ -11,6 +11,8 @@
  * - Profile completion tracking for onboarding
  */
 
+import type { ActivityCategory } from "./activity.types";
+
 /**
  * User Roles in the system with hierarchical permissions
  * @enum {string}
@@ -102,6 +104,9 @@ export interface FacultyProfile {
 
   /** Specialization / expertise areas */
   specializations: string[];
+
+  /** Categories this faculty member is allowed to review */
+  reviewCategories?: ActivityCategory[];
 
   /** Total activities reviewed */
   activitiesReviewed: number;
