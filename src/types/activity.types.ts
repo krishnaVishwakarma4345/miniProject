@@ -22,12 +22,13 @@ export enum ActivityCategory {
   TECH = "tech",
   CULTURAL = "cultural",
   COMMUNITY_SERVICE = "community_service",
+  COMMITTEE = "committee",
   ACADEMIC = "academic",
+  INTERNSHIP = "internship",
+  CERTIFICATION = "certification",
   LEADERSHIP = "leadership",
   ENTREPRENEURSHIP = "entrepreneurship",
   VOLUNTEER = "volunteer",
-  RESEARCH = "research",
-  ARTS_MUSIC = "arts_music",
 }
 
 /**
@@ -36,23 +37,27 @@ export enum ActivityCategory {
  */
 export enum ActivityType {
   // Sports
-  SPORTS_COMPETITION = "sports_competition",
-  SPORTS_TRAINING = "sports_training",
+  SPORTS_PARTICIPATED = "sports_participated",
+  SPORTS_WINNER = "sports_winner",
 
   // Tech
   HACKATHON = "hackathon",
   TECH_TALK = "tech_talk",
   CODING_WORKSHOP = "coding_workshop",
   TECH_PROJECT = "tech_project",
+  INTERNSHIP = "internship",
+  CERTIFICATION_COURSE = "certification_course",
 
   // Cultural
-  CULTURAL_EVENT = "cultural_event",
+  CULTURAL_EVENT_ATTENDED = "cultural_event_attended",
   CULTURAL_PERFORMANCE = "cultural_performance",
 
   // Community Service
   COMMUNITY_EVENT = "community_event",
   CHARITY_DRIVE = "charity_drive",
   MENTORING = "mentoring",
+  COMMITTEE_MEMBER = "committee_member",
+  COMMITTEE_HEAD = "committee_head",
 
   // Academic
   PRESENTATION = "presentation",
@@ -60,8 +65,9 @@ export enum ActivityType {
   SEMINAR_ATTENDED = "seminar_attended",
 
   // Leadership
-  CLUB_LEADERSHIP = "club_leadership",
-  EVENT_ORGANIZING = "event_organizing",
+  EVENT_HEAD = "event_head",
+  CHAIRPERSON = "chairperson",
+  VICE_CHAIRPERSON = "vice_chairperson",
 
   // Entrepreneurship
   STARTUP_LAUNCH = "startup_launch",
@@ -70,12 +76,6 @@ export enum ActivityType {
   // Volunteer
   VOLUNTEER_WORK = "volunteer_work",
 
-  // Research
-  RESEARCH_PROJECT = "research_project",
-
-  // Arts & Music
-  MUSIC_PERFORMANCE = "music_performance",
-  ART_EXHIBITION = "art_exhibition",
 }
 
 /**

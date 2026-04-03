@@ -77,12 +77,13 @@ export const getCategoryFolder = (
     [ActivityCategory.TECH]: "tech_activities",
     [ActivityCategory.CULTURAL]: "cultural_activities",
     [ActivityCategory.COMMUNITY_SERVICE]: "community_service_activities",
+    [ActivityCategory.COMMITTEE]: "committee_activities",
     [ActivityCategory.ACADEMIC]: "academic_activities",
+    [ActivityCategory.INTERNSHIP]: "internship_activities",
+    [ActivityCategory.CERTIFICATION]: "certification_activities",
     [ActivityCategory.LEADERSHIP]: "leadership_activities",
     [ActivityCategory.ENTREPRENEURSHIP]: "entrepreneurship_activities",
     [ActivityCategory.VOLUNTEER]: "volunteer_activities",
-    [ActivityCategory.RESEARCH]: "research_activities",
-    [ActivityCategory.ARTS_MUSIC]: "arts_music_activities",
   };
 
   return `${categoryMap[category]}/by_student/${parentId}`;

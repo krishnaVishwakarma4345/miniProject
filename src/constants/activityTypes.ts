@@ -10,23 +10,27 @@ import { ActivityCategory, ActivityType } from "@/types";
  */
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   // Sports
-  [ActivityType.SPORTS_COMPETITION]: "Sports Competition",
-  [ActivityType.SPORTS_TRAINING]: "Sports Training",
+  [ActivityType.SPORTS_PARTICIPATED]: "Participated",
+  [ActivityType.SPORTS_WINNER]: "Winner",
 
   // Tech
   [ActivityType.HACKATHON]: "Hackathon",
   [ActivityType.TECH_TALK]: "Tech Talk/Seminar",
   [ActivityType.CODING_WORKSHOP]: "Coding Workshop",
   [ActivityType.TECH_PROJECT]: "Tech Project",
+  [ActivityType.INTERNSHIP]: "Internship",
+  [ActivityType.CERTIFICATION_COURSE]: "Certification Course",
 
   // Cultural
-  [ActivityType.CULTURAL_EVENT]: "Cultural Event",
+  [ActivityType.CULTURAL_EVENT_ATTENDED]: "Cultural Event Attended",
   [ActivityType.CULTURAL_PERFORMANCE]: "Cultural Performance",
 
   // Community Service
   [ActivityType.COMMUNITY_EVENT]: "Community Event",
   [ActivityType.CHARITY_DRIVE]: "Charity Drive",
   [ActivityType.MENTORING]: "Mentoring",
+  [ActivityType.COMMITTEE_MEMBER]: "Member",
+  [ActivityType.COMMITTEE_HEAD]: "Head",
 
   // Academic
   [ActivityType.PRESENTATION]: "Presentation",
@@ -34,8 +38,9 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   [ActivityType.SEMINAR_ATTENDED]: "Seminar Attended",
 
   // Leadership
-  [ActivityType.CLUB_LEADERSHIP]: "Club Leadership",
-  [ActivityType.EVENT_ORGANIZING]: "Event Organizing",
+  [ActivityType.EVENT_HEAD]: "Event Head",
+  [ActivityType.CHAIRPERSON]: "Chairperson",
+  [ActivityType.VICE_CHAIRPERSON]: "Vice Chairperson",
 
   // Entrepreneurship
   [ActivityType.STARTUP_LAUNCH]: "Startup Launch",
@@ -43,13 +48,6 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
 
   // Volunteer
   [ActivityType.VOLUNTEER_WORK]: "Volunteer Work",
-
-  // Research
-  [ActivityType.RESEARCH_PROJECT]: "Research Project",
-
-  // Arts & Music
-  [ActivityType.MUSIC_PERFORMANCE]: "Music Performance",
-  [ActivityType.ART_EXHIBITION]: "Art Exhibition",
 } as const;
 
 /**
@@ -58,8 +56,8 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
  */
 export const CATEGORY_TYPE_MAP: Record<ActivityCategory, ActivityType[]> = {
   [ActivityCategory.SPORTS]: [
-    ActivityType.SPORTS_COMPETITION,
-    ActivityType.SPORTS_TRAINING,
+    ActivityType.SPORTS_PARTICIPATED,
+    ActivityType.SPORTS_WINNER,
   ],
 
   [ActivityCategory.TECH]: [
@@ -70,7 +68,7 @@ export const CATEGORY_TYPE_MAP: Record<ActivityCategory, ActivityType[]> = {
   ],
 
   [ActivityCategory.CULTURAL]: [
-    ActivityType.CULTURAL_EVENT,
+    ActivityType.CULTURAL_EVENT_ATTENDED,
     ActivityType.CULTURAL_PERFORMANCE,
   ],
 
@@ -80,15 +78,25 @@ export const CATEGORY_TYPE_MAP: Record<ActivityCategory, ActivityType[]> = {
     ActivityType.MENTORING,
   ],
 
+  [ActivityCategory.COMMITTEE]: [
+    ActivityType.COMMITTEE_MEMBER,
+    ActivityType.COMMITTEE_HEAD,
+  ],
+
   [ActivityCategory.ACADEMIC]: [
     ActivityType.PRESENTATION,
     ActivityType.PAPER_PUBLICATION,
     ActivityType.SEMINAR_ATTENDED,
   ],
 
+  [ActivityCategory.INTERNSHIP]: [ActivityType.INTERNSHIP],
+
+  [ActivityCategory.CERTIFICATION]: [ActivityType.CERTIFICATION_COURSE],
+
   [ActivityCategory.LEADERSHIP]: [
-    ActivityType.CLUB_LEADERSHIP,
-    ActivityType.EVENT_ORGANIZING,
+    ActivityType.EVENT_HEAD,
+    ActivityType.CHAIRPERSON,
+    ActivityType.VICE_CHAIRPERSON,
   ],
 
   [ActivityCategory.ENTREPRENEURSHIP]: [
@@ -97,13 +105,6 @@ export const CATEGORY_TYPE_MAP: Record<ActivityCategory, ActivityType[]> = {
   ],
 
   [ActivityCategory.VOLUNTEER]: [ActivityType.VOLUNTEER_WORK],
-
-  [ActivityCategory.RESEARCH]: [ActivityType.RESEARCH_PROJECT],
-
-  [ActivityCategory.ARTS_MUSIC]: [
-    ActivityType.MUSIC_PERFORMANCE,
-    ActivityType.ART_EXHIBITION,
-  ],
 } as const;
 
 /**
@@ -112,23 +113,27 @@ export const CATEGORY_TYPE_MAP: Record<ActivityCategory, ActivityType[]> = {
  */
 export const TYPE_CATEGORY_MAP: Record<ActivityType, ActivityCategory> = {
   // Sports
-  [ActivityType.SPORTS_COMPETITION]: ActivityCategory.SPORTS,
-  [ActivityType.SPORTS_TRAINING]: ActivityCategory.SPORTS,
+  [ActivityType.SPORTS_PARTICIPATED]: ActivityCategory.SPORTS,
+  [ActivityType.SPORTS_WINNER]: ActivityCategory.SPORTS,
 
   // Tech
   [ActivityType.HACKATHON]: ActivityCategory.TECH,
   [ActivityType.TECH_TALK]: ActivityCategory.TECH,
   [ActivityType.CODING_WORKSHOP]: ActivityCategory.TECH,
   [ActivityType.TECH_PROJECT]: ActivityCategory.TECH,
+  [ActivityType.INTERNSHIP]: ActivityCategory.INTERNSHIP,
+  [ActivityType.CERTIFICATION_COURSE]: ActivityCategory.CERTIFICATION,
 
   // Cultural
-  [ActivityType.CULTURAL_EVENT]: ActivityCategory.CULTURAL,
+  [ActivityType.CULTURAL_EVENT_ATTENDED]: ActivityCategory.CULTURAL,
   [ActivityType.CULTURAL_PERFORMANCE]: ActivityCategory.CULTURAL,
 
   // Community Service
   [ActivityType.COMMUNITY_EVENT]: ActivityCategory.COMMUNITY_SERVICE,
   [ActivityType.CHARITY_DRIVE]: ActivityCategory.COMMUNITY_SERVICE,
   [ActivityType.MENTORING]: ActivityCategory.COMMUNITY_SERVICE,
+  [ActivityType.COMMITTEE_MEMBER]: ActivityCategory.COMMITTEE,
+  [ActivityType.COMMITTEE_HEAD]: ActivityCategory.COMMITTEE,
 
   // Academic
   [ActivityType.PRESENTATION]: ActivityCategory.ACADEMIC,
@@ -136,8 +141,9 @@ export const TYPE_CATEGORY_MAP: Record<ActivityType, ActivityCategory> = {
   [ActivityType.SEMINAR_ATTENDED]: ActivityCategory.ACADEMIC,
 
   // Leadership
-  [ActivityType.CLUB_LEADERSHIP]: ActivityCategory.LEADERSHIP,
-  [ActivityType.EVENT_ORGANIZING]: ActivityCategory.LEADERSHIP,
+  [ActivityType.EVENT_HEAD]: ActivityCategory.LEADERSHIP,
+  [ActivityType.CHAIRPERSON]: ActivityCategory.LEADERSHIP,
+  [ActivityType.VICE_CHAIRPERSON]: ActivityCategory.LEADERSHIP,
 
   // Entrepreneurship
   [ActivityType.STARTUP_LAUNCH]: ActivityCategory.ENTREPRENEURSHIP,
@@ -145,13 +151,6 @@ export const TYPE_CATEGORY_MAP: Record<ActivityType, ActivityCategory> = {
 
   // Volunteer
   [ActivityType.VOLUNTEER_WORK]: ActivityCategory.VOLUNTEER,
-
-  // Research
-  [ActivityType.RESEARCH_PROJECT]: ActivityCategory.RESEARCH,
-
-  // Arts & Music
-  [ActivityType.MUSIC_PERFORMANCE]: ActivityCategory.ARTS_MUSIC,
-  [ActivityType.ART_EXHIBITION]: ActivityCategory.ARTS_MUSIC,
 } as const;
 
 /**
