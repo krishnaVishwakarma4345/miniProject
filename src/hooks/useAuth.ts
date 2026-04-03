@@ -42,6 +42,51 @@ export function useAuth(): UseAuthReturn {
   const uiStore = useUIStore()
   const [initialized, setInitialized] = useState(false)
 
+  const createServerSession = async (
+    payload: { idToken: string; userProfile?: Record<string, unknown> },
+    timeoutMs: number = 15000
+  ) => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+
+      const body = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        const errorMessage =
+          (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string' && body.error) ||
+          (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string' && body.message) ||
+          'Session creation failed'
+
+        const errorCode =
+          (body && typeof body === 'object' && 'code' in body && typeof body.code === 'string' && body.code) ||
+          'SESSION_ERROR'
+
+        throw new ApiError(errorMessage, errorCode)
+      }
+
+      return body
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new ApiError(
+          'Login timed out while creating secure session. Please retry.',
+          'SESSION_TIMEOUT',
+          408
+        )
+      }
+      throw error
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
   // Initialize auth on mount
   useEffect(() => {
     let isMounted = true
@@ -95,18 +140,7 @@ export function useAuth(): UseAuthReturn {
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
-      const response = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new ApiError(error.error || 'Session creation failed', error.code || 'SESSION_ERROR')
-      }
-
-      const sessionData = await response.json()
+      const sessionData = await createServerSession({ idToken })
 
       // Step 3: Update Zustand auth store
       const user: User = {
@@ -170,25 +204,14 @@ export function useAuth(): UseAuthReturn {
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
-      const response = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          userProfile: {
-            fullName: userCredential.user.displayName || 'User',
-            displayName: userCredential.user.displayName || 'User',
-            signUpMethod: 'google',
-          },
-        })
+      const sessionData = await createServerSession({
+        idToken,
+        userProfile: {
+          fullName: userCredential.user.displayName || 'User',
+          displayName: userCredential.user.displayName || 'User',
+          signUpMethod: 'google',
+        },
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new ApiError(error.error || 'Session creation failed', error.code || 'SESSION_ERROR')
-      }
-
-      const sessionData = await response.json()
 
       // Step 3: Update Zustand auth store
       const user: User = {
@@ -263,27 +286,16 @@ export function useAuth(): UseAuthReturn {
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
-      const response = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          userProfile: {
-            fullName: displayName,
-            displayName,
-            role: UserRole.STUDENT,
-            institutionId,
-            signUpMethod: 'email',
-          },
-        })
+      const sessionData = await createServerSession({
+        idToken,
+        userProfile: {
+          fullName: displayName,
+          displayName,
+          role: UserRole.STUDENT,
+          institutionId,
+          signUpMethod: 'email',
+        },
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new ApiError(error.error || 'Session creation failed', error.code || 'SESSION_ERROR')
-      }
-
-      const sessionData = await response.json()
 
       // Step 3: Update Zustand auth store
       const user: User = {
@@ -354,26 +366,15 @@ export function useAuth(): UseAuthReturn {
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
-      const response = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          userProfile: {
-            fullName: userCredential.user.displayName || 'User',
-            displayName: userCredential.user.displayName || 'User',
-            role: UserRole.STUDENT,
-            signUpMethod: 'google',
-          },
-        })
+      const sessionData = await createServerSession({
+        idToken,
+        userProfile: {
+          fullName: userCredential.user.displayName || 'User',
+          displayName: userCredential.user.displayName || 'User',
+          role: UserRole.STUDENT,
+          signUpMethod: 'google',
+        },
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new ApiError(error.error || 'Session creation failed', error.code || 'SESSION_ERROR')
-      }
-
-      const sessionData = await response.json()
 
       // Step 3: Update Zustand auth store
       const user: User = {

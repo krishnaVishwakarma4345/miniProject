@@ -29,6 +29,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   "auth/operation-not-allowed": "Google sign-in is not available.",
   "auth/invalid-credential": "Invalid credentials. Please try again.",
   "auth/invalid-login-credentials": "Invalid email or password.",
+  "auth/network-request-failed": "Network error while contacting Firebase. Check your connection and try again.",
 };
 
 /**
@@ -49,8 +50,12 @@ export const signInWithEmail = async (
     return userCredential;
   } catch (error) {
     const authError = error as AuthError;
-    const message =
+    const baseMessage =
       ERROR_MESSAGES[authError.code] || "Failed to sign in. Please try again.";
+    const message =
+      authError.code === "auth/invalid-credential" || authError.code === "auth/invalid-login-credentials"
+        ? `${baseMessage} If this account works on localhost but not on deployed app, it is likely in a different Firebase project.`
+        : baseMessage;
 
     throw new ApiError(message, authError.code || "LOGIN_ERROR", 401, {
       details: error instanceof Error ? error.message : String(error),
