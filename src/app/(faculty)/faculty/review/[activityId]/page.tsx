@@ -1,4 +1,4 @@
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { Activity, ApiResponse } from "@/types"
 import ReviewDetailClient from "@/features/review/components/ReviewDetailClient"
@@ -9,13 +9,17 @@ interface ReviewDetailPageProps {
 
 export default async function ReviewDetailPage({ params }: ReviewDetailPageProps) {
 	const { activityId } = await params
+	const requestHeaders = await headers()
+	const protocol = requestHeaders.get('x-forwarded-proto') || 'https'
+	const host = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || 'localhost:3000'
+	const origin = `${protocol}://${host}`
 	const cookieStore = await cookies()
 	const cookieHeader = cookieStore
 		.getAll()
 		.map((cookie) => `${cookie.name}=${cookie.value}`)
 		.join('; ')
 
-	const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/activity/detail?activityId=${encodeURIComponent(activityId)}`, {
+	const response = await fetch(`${origin}/api/activity/detail?activityId=${encodeURIComponent(activityId)}`, {
 		headers: {
 			cookie: cookieHeader,
 		},
