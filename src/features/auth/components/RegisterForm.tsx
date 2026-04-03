@@ -190,17 +190,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
     try {
       await register(email, password, displayName, institutionId)
 
-      // Success animation
-      if (formRef.current) {
-        gsap.to(formRef.current, {
-          opacity: 0,
-          y: -10,
-          duration: 0.3,
-          onComplete: () => {
-            onSuccess?.()
-          }
-        })
-      }
+      onSuccess?.()
     } catch (error) {
       onError?.(error instanceof Error ? error.message : 'Registration failed')
     } finally {

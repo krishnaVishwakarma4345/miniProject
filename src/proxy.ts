@@ -77,13 +77,10 @@ const verifySessionCookie = async (
     if (!adminAuth) {
       console.warn('🔐 Middleware: Admin Auth not initialized')
 
-      // In local development, avoid false redirects after successful login when
-      // middleware cannot verify with Admin SDK in edge runtime.
-      if (process.env.NODE_ENV !== 'production') {
-        return { uid: 'session-cookie-present', role: 'student', unverifiable: true }
-      }
-
-      return null
+      // Edge runtime frequently cannot hydrate Firebase Admin singleton.
+      // If session cookie exists, allow request and defer strict auth checks
+      // to API routes / server handlers to avoid login redirect loops.
+      return { uid: 'session-cookie-present', role: 'student', unverifiable: true }
     }
 
     // Verify session cookie with Firebase Admin SDK

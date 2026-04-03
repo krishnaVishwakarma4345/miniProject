@@ -109,18 +109,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
     try {
       await login(email, password)
-      
-      // Success animation and callback
-      if (formRef.current) {
-        gsap.to(formRef.current, {
-          opacity: 0,
-          y: -10,
-          duration: 0.3,
-          onComplete: () => {
-            onSuccess?.()
-          }
-        })
-      }
+
+      onSuccess?.()
     } catch (error) {
       shakeField(formRef)
       onError?.(error instanceof Error ? error.message : 'Login failed')
