@@ -27,6 +27,8 @@ export interface RegisterFormProps {
 export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   const { register, isLoading, error: authError } = useAuth()
 
+  const registrationInstitutionKey = 'auth-registration-institution-id'
+
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,6 +46,15 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
 
   const formRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const savedInstitutionId = window.sessionStorage.getItem(registrationInstitutionKey)
+    if (savedInstitutionId) {
+      setInstitutionId(savedInstitutionId)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchInstitutions = async () => {
@@ -385,7 +396,11 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                   value={institutionId}
                   disabled={institutionsLoading || institutions.length === 0}
                   onChange={(e) => {
-                    setInstitutionId(e.target.value)
+                    const nextInstitutionId = e.target.value
+                    setInstitutionId(nextInstitutionId)
+                    if (typeof window !== 'undefined') {
+                      window.sessionStorage.setItem(registrationInstitutionKey, nextInstitutionId)
+                    }
                     if (errors.institutionId) setErrors({ ...errors, institutionId: '' })
                   }}
                   className={`w-full px-4 py-2 border-2 rounded-lg transition-colors ${

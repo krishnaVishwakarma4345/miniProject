@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -25,15 +26,26 @@ export function GoogleSignInButton({
   onError,
   variant = 'button'
 }: GoogleSignInButtonProps) {
-  const { loginWithGoogle, isLoading } = useAuth()
+  const pathname = usePathname()
+  const { loginWithGoogle, registerWithGoogleAuth, isLoading } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isHovering, setIsHovering] = useState(false)
+
+  const getRegistrationInstitutionId = () => {
+    if (typeof window === 'undefined') return ''
+    return window.sessionStorage.getItem('auth-registration-institution-id') || ''
+  }
 
   const handleGoogleSignIn = async () => {
     setError(null)
 
     try {
-      await loginWithGoogle()
+      if (pathname === '/register') {
+        const institutionId = getRegistrationInstitutionId()
+        await registerWithGoogleAuth(institutionId)
+      } else {
+        await loginWithGoogle()
+      }
       onSuccess?.()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Google sign-in failed'

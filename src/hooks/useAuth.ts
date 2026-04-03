@@ -19,9 +19,9 @@ export type UseAuthReturn = {
 
   // Auth methods
   login: (email: string, password: string) => Promise<void>
-  loginWithGoogle: () => Promise<void>
+  loginWithGoogle: (institutionId?: string) => Promise<void>
   register: (email: string, password: string, displayName: string, institutionId: string) => Promise<void>
-  registerWithGoogleAuth: () => Promise<void>
+  registerWithGoogleAuth: (institutionId?: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
 
@@ -194,7 +194,7 @@ export function useAuth(): UseAuthReturn {
   /**
    * Login with Google OAuth
    */
-  const loginWithGoogle = async (): Promise<void> => {
+  const loginWithGoogle = async (institutionId?: string): Promise<void> => {
     authStore.setIsLoading(true)
     authStore.setError(null)
 
@@ -209,6 +209,7 @@ export function useAuth(): UseAuthReturn {
         userProfile: {
           fullName: userCredential.user.displayName || 'User',
           displayName: userCredential.user.displayName || 'User',
+          institutionId,
           signUpMethod: 'google',
         },
       })
@@ -356,13 +357,21 @@ export function useAuth(): UseAuthReturn {
   /**
    * Register with Google OAuth
    */
-  const registerWithGoogleAuth = async (): Promise<void> => {
+  const registerWithGoogleAuth = async (institutionId?: string): Promise<void> => {
     authStore.setIsLoading(true)
     authStore.setError(null)
 
     try {
+      if (!institutionId) {
+        throw new ApiError(
+          'Select an institution before continuing with Google sign-up.',
+          'MISSING_INSTITUTION',
+          400
+        )
+      }
+
       // Step 1: Register with Google
-      const userCredential = await registerWithGoogle('')
+      const userCredential = await registerWithGoogle(institutionId)
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
@@ -372,6 +381,7 @@ export function useAuth(): UseAuthReturn {
           fullName: userCredential.user.displayName || 'User',
           displayName: userCredential.user.displayName || 'User',
           role: UserRole.STUDENT,
+          institutionId,
           signUpMethod: 'google',
         },
       })
@@ -388,7 +398,7 @@ export function useAuth(): UseAuthReturn {
         language: 'en',
         mfaEnabled: false,
         photoURL: userCredential.user.photoURL || undefined,
-        institutionId: sessionData.institutionId || '',
+        institutionId: sessionData.institutionId || institutionId,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
