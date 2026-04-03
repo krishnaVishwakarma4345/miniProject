@@ -78,6 +78,21 @@ export function ActivityCard({ activity, onSelect, onUploadProof, className = ''
 							))}
 						</div>
 					) : null}
+					<div className='mt-4 flex flex-wrap gap-2 md:hidden'>
+						<Link href={`/student/activities/${activity.id}`} className='flex-1'>
+							<Button size='sm' variant='outline' className='w-full'>
+								View details
+							</Button>
+						</Link>
+						{activity.status === ActivityStatus.REVISION_REQUESTED || activity.status === ActivityStatus.SUBMITTED ? (
+							<Button size='sm' variant='solid' className='flex-1' onClick={() => onUploadProof?.(activity)}>
+								Upload Proof
+							</Button>
+						) : null}
+						<Button size='sm' variant='ghost' className='flex-1' onClick={() => onSelect?.(activity)}>
+							Quick Actions
+						</Button>
+					</div>
 				</div>
 
 				<div className='flex w-full min-w-0 flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 lg:max-w-xs'>
