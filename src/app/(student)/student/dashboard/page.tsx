@@ -8,6 +8,7 @@ import useActivities from '@/features/activities/hooks/useActivities'
 import ActivityList from '@/features/activities/components/ActivityList'
 import { StatCard } from '@/components/data-display/StatCard'
 import { Button } from '@/components/ui/Button'
+import { ScrollReveal } from '@/features/landing/components/ScrollReveal'
 
 export default function StudentDashboardPage() {
 	const { user } = useAuth()
@@ -28,7 +29,8 @@ export default function StudentDashboardPage() {
 
 	return (
 		<div className='space-y-6'>
-			<section className='rounded-[32px] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm'>
+			<ScrollReveal from='left'>
+				<section className='rounded-[32px] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm'>
 				<div className='flex flex-wrap items-center justify-between gap-4'>
 					<div>
 						<p className='text-xs uppercase tracking-[0.4em] text-slate-400'>Welcome back</p>
@@ -47,14 +49,18 @@ export default function StudentDashboardPage() {
 						</Link>
 					</div>
 				</div>
-			</section>
+				</section>
+			</ScrollReveal>
 
-			<section className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-				{stats.map((stat) => (
-					<StatCard key={stat.label} label={stat.label} value={stat.value} />
-				))}
-			</section>
+			<ScrollReveal from='right'>
+				<section className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+					{stats.map((stat) => (
+						<StatCard key={stat.label} label={stat.label} value={stat.value} />
+					))}
+				</section>
+			</ScrollReveal>
 
+			<ScrollReveal from='left'>
 			<section className='space-y-4'>
 				<div className='flex flex-wrap items-center justify-between gap-3'>
 					<h3 className='text-lg font-semibold text-slate-900'>Recent activity</h3>
@@ -74,6 +80,7 @@ export default function StudentDashboardPage() {
 					}
 				/>
 			</section>
+			</ScrollReveal>
 		</div>
 	)
 }

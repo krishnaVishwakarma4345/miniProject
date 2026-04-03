@@ -12,6 +12,7 @@ import ActivityStatusBadge from "@/features/activities/components/ActivityStatus
 import { CATEGORY_LABELS } from "@/constants/activityCategories"
 import { useReviewQueue } from "@/features/review/hooks/useReviewQueue"
 import { formatDate } from "@/utils/date.utils"
+import { ScrollReveal } from "@/features/landing/components/ScrollReveal"
 
 export default function FacultyDashboardPage() {
 	const router = useRouter()
@@ -20,30 +21,35 @@ export default function FacultyDashboardPage() {
 
 	return (
 		<PageContainer>
-			<PageHeader
-				title="Faculty dashboard"
-				subtitle="Monitor review load, keep an eye on assignments, and dive into the queue when you're ready."
-				actions={
-					<div className="flex items-center gap-2">
-						<Link href="/faculty/profile" className="inline-flex">
-							<Button variant="outline" size="sm">
-								Profile
+			<ScrollReveal from='left'>
+				<PageHeader
+					title="Faculty dashboard"
+					subtitle="Monitor review load, keep an eye on assignments, and dive into the queue when you're ready."
+					actions={
+						<div className="flex items-center gap-2">
+							<Link href="/faculty/profile" className="inline-flex">
+								<Button variant="outline" size="sm">
+									Profile
+								</Button>
+							</Link>
+							<Button variant="outline" size="sm" onClick={() => refresh()}>
+								Refresh data
 							</Button>
-						</Link>
-						<Button variant="outline" size="sm" onClick={() => refresh()}>
-							Refresh data
-						</Button>
-						<Button size="sm" onClick={() => router.push("/faculty/review")}>
-							Open review queue
-						</Button>
-					</div>
-				}
-			/>
-			<section className="grid gap-4 md:grid-cols-3">
-				<StatCard label="Total pending" value={stats.pending} suffix="" />
-				<StatCard label="Assigned to me" value={stats.assignedToMe} suffix="" />
-				<StatCard label="Unassigned backlog" value={stats.unassigned} suffix="" />
-			</section>
+							<Button size="sm" onClick={() => router.push("/faculty/review")}>
+								Open review queue
+							</Button>
+						</div>
+					}
+				/>
+			</ScrollReveal>
+			<ScrollReveal from='right'>
+				<section className="grid gap-4 md:grid-cols-3">
+					<StatCard label="Total pending" value={stats.pending} suffix="" />
+					<StatCard label="Assigned to me" value={stats.assignedToMe} suffix="" />
+					<StatCard label="Unassigned backlog" value={stats.unassigned} suffix="" />
+				</section>
+			</ScrollReveal>
+			<ScrollReveal from='left'>
 			<section className="mt-8 rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-sm">
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 					<div>
@@ -83,6 +89,7 @@ export default function FacultyDashboardPage() {
 					)}
 				</div>
 			</section>
+			</ScrollReveal>
 		</PageContainer>
 	)
 }

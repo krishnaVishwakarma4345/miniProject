@@ -18,13 +18,13 @@ export function BulkActionBar({ count, disabled, onApprove, onReject, onAssign }
 					animate={{ y: 0, opacity: 1 }}
 					exit={{ y: 80, opacity: 0 }}
 					transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-					className='fixed bottom-6 left-1/2 z-40 w-full max-w-2xl -translate-x-1/2 rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-2xl backdrop-blur'
+					className='fixed bottom-3 left-3 right-3 z-40 mx-auto w-auto max-w-2xl rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-2xl backdrop-blur sm:bottom-6 sm:left-1/2 sm:right-auto sm:w-full sm:-translate-x-1/2'
 				>
-					<div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+					<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 						<p className='text-sm font-semibold text-slate-700'>
 							{count} item{count === 1 ? '' : 's'} selected
 						</p>
-						<div className='flex flex-wrap gap-2'>
+						<div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap'>
 							<Button size='sm' variant='outline' onClick={onAssign} disabled={disabled}>
 								Assign to me
 							</Button>

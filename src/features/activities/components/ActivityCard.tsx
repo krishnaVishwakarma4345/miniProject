@@ -38,9 +38,9 @@ export function ActivityCard({ activity, onSelect, onUploadProof, className = ''
 			transition={{ duration: 0.35, ease: 'easeOut' }}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
-			className={`relative rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur ${className}`}
+			className={`relative min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:p-5 ${className}`}
 		>
-			<div className='flex flex-col gap-4 lg:flex-row lg:items-start'>
+			<div className='flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start'>
 				<div className='flex-1 space-y-3'>
 					<div className='flex flex-wrap items-center gap-2'>
 						<Badge variant='info' className='bg-transparent text-slate-600' style={{ borderColor: categoryAccent, color: categoryAccent }}>
@@ -80,7 +80,7 @@ export function ActivityCard({ activity, onSelect, onUploadProof, className = ''
 					) : null}
 				</div>
 
-				<div className='flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 lg:max-w-xs'>
+				<div className='flex w-full min-w-0 flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 lg:max-w-xs'>
 					<ActivityStatusBadge status={activity.status} showDescription size='sm' />
 					<div className='grid grid-cols-2 gap-3 text-center text-xs font-semibold text-slate-500'>
 						<div className='rounded-xl border border-slate-200/70 bg-white p-3'>
@@ -103,7 +103,7 @@ export function ActivityCard({ activity, onSelect, onUploadProof, className = ''
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: 4 }}
 						transition={{ duration: 0.25 }}
-						className='absolute right-5 top-5 flex flex-wrap gap-2'
+							className='absolute right-4 top-4 hidden flex-wrap gap-2 md:flex'
 					>
 						<Link href={`/student/activities/${activity.id}`}>
 							<Button size='sm' variant='outline'>View</Button>

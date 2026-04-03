@@ -1,7 +1,8 @@
 "use client"
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Activity, ApiResponse } from '@/types'
 import { CATEGORY_LABELS } from '@/constants/activityCategories'
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { LoadingSkeleton } from '@/components/data-display/LoadingSkeleton'
 import { ErrorState } from '@/components/data-display/ErrorState'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 export default function ActivityDetailPage() {
 	const router = useRouter()
@@ -21,7 +23,7 @@ export default function ActivityDetailPage() {
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const loadActivity = async () => {
+	const loadActivity = useCallback(async () => {
 		if (!activityId) {
 			setActivity(null)
 			setError('Missing activity id')
@@ -49,26 +51,28 @@ export default function ActivityDetailPage() {
 		} finally {
 			setIsLoading(false)
 		}
-	}
+	}, [activityId])
 
 	useEffect(() => {
 		void loadActivity()
-	}, [activityId])
+	}, [loadActivity])
 
 	if (isLoading && !activity) {
 		return (
-			<div className='rounded-3xl border border-slate-200 bg-white p-6'>
-				<LoadingSkeleton lines={6} />
-			</div>
+			<PageContainer>
+				<div className='rounded-3xl border border-slate-200 bg-white p-6'>
+					<LoadingSkeleton lines={6} />
+				</div>
+			</PageContainer>
 		)
 	}
 
 	if (!activity) {
-		return <ErrorState title='Activity not found' message={error || 'We could not locate this submission.'} action={<Button onClick={() => void loadActivity()}>Reload</Button>} />
+		return <PageContainer><ErrorState title='Activity not found' message={error || 'We could not locate this submission.'} action={<Button onClick={() => void loadActivity()}>Reload</Button>} /></PageContainer>
 	}
 
 	return (
-		<div className='space-y-6'>
+		<PageContainer className='space-y-6'>
 			<div className='flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm'>
 				<div>
 					<button type='button' className='text-xs font-semibold text-slate-500 underline-offset-4 hover:underline' onClick={() => router.back()}>
@@ -117,7 +121,13 @@ export default function ActivityDetailPage() {
 					{activity.proofFiles.map((file) => (
 						<a key={file.id} href={file.secureUrl || file.url} target='_blank' rel='noreferrer' className='group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50'>
 							{file.type === 'image' ? (
-								<img src={file.secureUrl || file.url} alt={file.name} className='h-48 w-full object-cover transition duration-300 group-hover:scale-[1.02]' />
+								<Image
+									src={file.secureUrl || file.url}
+									alt={file.name}
+									width={1200}
+									height={800}
+									className='h-48 w-full object-cover transition duration-300 group-hover:scale-[1.02]'
+								/>
 							) : (
 								<div className='flex h-48 flex-col items-center justify-center gap-2 text-slate-600'>
 									<span className='text-sm font-semibold uppercase'>{file.type}</span>
@@ -141,7 +151,7 @@ export default function ActivityDetailPage() {
 					</div>
 				</section>
 			) : null}
-		</div>
+		</PageContainer>
 	)
 }
 

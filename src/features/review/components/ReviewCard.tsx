@@ -30,10 +30,10 @@ export function ReviewCard({ activity, selected, onSelectToggle, onApprove, onRe
 			initial={{ opacity: 0, y: 12 }}
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: -10 }}
-			className={`relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-lg backdrop-blur transition ${selected ? 'ring-2 ring-slate-900/40' : ''}`}
+			className={`relative min-w-0 overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur transition sm:p-5 ${selected ? 'ring-2 ring-slate-900/40' : ''}`}
 		>
-			<div className='flex flex-col gap-5 md:flex-row md:items-start'>
-				<div className='flex items-start gap-4 md:w-2/3'>
+			<div className='flex min-w-0 flex-col gap-5 md:flex-row md:items-start'>
+				<div className='flex min-w-0 items-start gap-4 md:w-2/3'>
 					<button
 						onClick={() => onSelectToggle?.(activity.id)}
 						className={`mt-1 h-5 w-5 rounded-md border ${selected ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-transparent'}`}
@@ -67,10 +67,10 @@ export function ReviewCard({ activity, selected, onSelectToggle, onApprove, onRe
 						</div>
 					</div>
 				</div>
-				<div className='flex flex-1 flex-col gap-3 md:items-end'>
+				<div className='flex min-w-0 flex-1 flex-col gap-3 md:items-end'>
 					<ActivityStatusBadge status={activity.status} />
 					{!isFinalized ? (
-						<div className='flex flex-wrap gap-2'>
+						<div className='flex flex-wrap gap-2 md:justify-end'>
 							<Button variant='ghost' size='sm' onClick={() => onAssign?.(activity)}>Assign</Button>
 							<Button variant='outline' size='sm' onClick={() => onReject(activity)}>Reject</Button>
 							<Button size='sm' onClick={() => onApprove(activity)}>Approve</Button>

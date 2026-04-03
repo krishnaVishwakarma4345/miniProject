@@ -66,7 +66,7 @@ export default function FacultyLayout({ children }: FacultyLayoutProps) {
 	}
 
 	return (
-		<div className="min-h-screen bg-linear-to-b from-slate-50 to-white">
+		<div className="min-h-screen overflow-x-hidden bg-linear-to-b from-slate-50 to-white">
 			<header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
 				<div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -75,19 +75,21 @@ export default function FacultyLayout({ children }: FacultyLayoutProps) {
 							<h1 className="text-2xl font-semibold text-slate-900">Smart Student Hub</h1>
 							<p className="text-sm text-slate-500">Coordinate reviews, manage assignments, and keep student submissions moving.</p>
 						</div>
-						<div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
+						<div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
 							<div className="h-10 w-10 rounded-2xl bg-slate-900 text-center text-sm font-semibold uppercase leading-10 text-white">{initials}</div>
-							<div className="min-w-40">
-								<p className="text-sm font-semibold text-slate-900">{user?.displayName ?? "Faculty"}</p>
-								<p className="text-xs text-slate-500">{user?.email}</p>
+							<div className="min-w-0 flex-1">
+								<p className="truncate text-sm font-semibold text-slate-900">{user?.displayName ?? "Faculty"}</p>
+								<p className="truncate text-xs text-slate-500">{user?.email}</p>
 							</div>
-							<Button variant="outline" size="sm" onClick={() => router.push("/faculty/profile")}>Profile</Button>
-							<Button variant="outline" size="sm" loading={isSigningOut} onClick={handleLogout}>
-								Logout
-							</Button>
+							<div className="flex items-center gap-2">
+								<Button variant="outline" size="sm" onClick={() => router.push("/faculty/profile")}>Profile</Button>
+								<Button variant="outline" size="sm" loading={isSigningOut} onClick={handleLogout}>
+									Logout
+								</Button>
+							</div>
 						</div>
 					</div>
-					<nav className="flex flex-wrap gap-2">
+					<nav className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 						{NAV_LINKS.map((item) => {
 							const isActive = pathname?.startsWith(item.href)
 							return (
@@ -104,7 +106,7 @@ export default function FacultyLayout({ children }: FacultyLayoutProps) {
 					</nav>
 				</div>
 			</header>
-			<div className="pb-10 pt-6">
+			<div className="min-w-0 pb-10 pt-6">
 				{children}
 			</div>
 		</div>

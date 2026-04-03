@@ -3,12 +3,14 @@
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/feedback/Alert'
 import { useReports } from '@/features/reports/hooks/useReports'
+import { ScrollReveal } from '@/features/landing/components/ScrollReveal'
 
 export default function AdminReportsPage() {
 	const { templates, latestReport, isGenerating, error, generateReport } = useReports()
 
 	return (
 		<div className="space-y-8">
+			<ScrollReveal from='left'>
 			<section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
 				<p className="text-xs uppercase tracking-[0.4em] text-slate-400">Reports</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">Automated exports</h1>
@@ -21,6 +23,7 @@ export default function AdminReportsPage() {
 					</Button>
 				</div>
 			</section>
+			</ScrollReveal>
 
 			{error ? (
 				<Alert variant="error" title="Report action failed">
@@ -28,6 +31,7 @@ export default function AdminReportsPage() {
 				</Alert>
 			) : null}
 
+			<ScrollReveal from='right'>
 			<section className="rounded-2xl border border-slate-200 bg-white p-6">
 				<h2 className="text-lg font-semibold text-slate-900">Available templates</h2>
 				<div className="mt-4 divide-y divide-slate-100">
@@ -40,7 +44,9 @@ export default function AdminReportsPage() {
 					))}
 				</div>
 			</section>
+			</ScrollReveal>
 
+			<ScrollReveal from='left'>
 			<section className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-700">
 				<h2 className="text-lg font-semibold text-slate-900">Latest generated report</h2>
 				{latestReport ? (
@@ -64,6 +70,7 @@ export default function AdminReportsPage() {
 					<p className="mt-4 text-slate-500">No report generated yet. Click Generate live report.</p>
 				)}
 			</section>
+			</ScrollReveal>
 		</div>
 	)
 }

@@ -47,30 +47,30 @@ export function ActivityFilter({ filters, onChange, onRefresh, onAdd, isRefreshi
 			transition={{ duration: 0.35, ease: 'easeOut' }}
 			className='flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur'
 		>
-			<div className='flex flex-wrap items-center justify-between gap-3'>
-				<div>
+			<div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+				<div className='min-w-0'>
 					<p className='text-xs uppercase tracking-[0.3em] text-slate-400'>Activities</p>
 					<h2 className='text-xl font-semibold text-slate-900'>Track every submission</h2>
 					<p className='text-sm text-slate-500'>Filter by status, category, or search keywords.</p>
 				</div>
-				<div className='flex flex-wrap gap-2'>
+				<div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
 					{onRefresh ? (
-						<Button type='button' variant='outline' size='sm' onClick={onRefresh} loading={isRefreshing}>
+						<Button type='button' variant='outline' size='sm' className='w-full sm:w-auto' onClick={onRefresh} loading={isRefreshing}>
 							Refresh
 						</Button>
 					) : null}
 					{onAdd ? (
-						<Button type='button' size='sm' onClick={onAdd}>
+						<Button type='button' size='sm' className='w-full sm:w-auto' onClick={onAdd}>
 							+ Add activity
 						</Button>
 					) : (
 						<Link href='/student/activities/add'>
-							<Button size='sm'>+ Add activity</Button>
+							<Button size='sm' className='w-full sm:w-auto'>+ Add activity</Button>
 						</Link>
 					)}
 				</div>
 			</div>
-			<div className='grid gap-4 lg:grid-cols-3'>
+			<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 				<Input
 					name='search'
 					placeholder='Search title or description'

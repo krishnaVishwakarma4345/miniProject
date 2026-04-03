@@ -77,7 +77,7 @@ export function ReviewQueue() {
 				<StatCard label='Unassigned' value={stats.unassigned} />
 			</div>
 
-			<div className='grid gap-4 rounded-3xl border border-slate-200/70 bg-white p-4 md:grid-cols-4'>
+			<div className='grid gap-4 rounded-3xl border border-slate-200/70 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4'>
 				<Input
 					placeholder='Search by title or student'
 					value={filters.search}
@@ -120,8 +120,8 @@ export function ReviewQueue() {
 							onApprove={(item) => setModalState({ type: 'approve', scope: 'single', activity: item })}
 							onReject={(item) => setModalState({ type: 'reject', scope: 'single', activity: item })}
 							onAssign={(item) => {
-							void assignToMe([item.id])
-						}}
+								void assignToMe([item.id])
+							}}
 						/>
 					))
 				) : (

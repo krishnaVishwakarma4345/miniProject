@@ -13,7 +13,7 @@ export default function StudentProfileEditPage() {
 				subtitle='Update the information that identifies you and helps faculty understand your background.'
 				actions={
 					<Link href={STUDENT_ROUTES.PROFILE} className='inline-flex'>
-						<Button variant='outline'>Back to profile</Button>
+							<Button variant='outline' className='w-full sm:w-auto'>Back to profile</Button>
 					</Link>
 				}
 			/>

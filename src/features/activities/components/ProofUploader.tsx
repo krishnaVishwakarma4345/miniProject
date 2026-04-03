@@ -170,7 +170,14 @@ export function ProofUploader({ value, onChange, maxFiles = 6, className = '' }:
 				onDrop={onDrop}
 				className={`relative flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed p-8 text-center transition ${dragging ? 'border-slate-900 bg-slate-50' : 'border-slate-200 bg-white/70'}`}
 			>
-				<input ref={inputRef} type='file' className='sr-only' multiple onChange={onInputChange} accept='image/*,application/pdf,video/*' />
+				<input
+					ref={inputRef}
+					type='file'
+					className='sr-only'
+					multiple
+					onChange={onInputChange}
+					accept='image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.avif,.heic,.heif,.tif,.tiff,.jfif,.pjpeg,.pjp,application/pdf,video/*'
+				/>
 				<motion.div initial={{ scale: 0.94, opacity: 0.8 }} animate={{ scale: dragging ? 1.02 : 1, opacity: 1 }} className='grid h-16 w-16 place-items-center rounded-2xl border border-slate-200 bg-white text-2xl text-slate-500'>
 					+
 				</motion.div>

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { GoogleSignInButton } from '@/features/auth/components/GoogleSignInButton'
 import { useAuthStore } from '@/store/auth.store'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 /**
  * Login Page
@@ -51,13 +52,13 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
-    >
-      {/* Heading */}
+    <PageContainer className='flex justify-center'>
+      <motion.div
+        initial={false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md space-y-6"
+      >
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
         <p className="text-gray-600">Sign in to your account to continue</p>
@@ -86,11 +87,12 @@ export default function LoginPage() {
         transition={{ delay: 0.3 }}
         className="text-center text-sm text-gray-600"
       >
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
           Create one here
         </Link>
       </motion.div>
-    </motion.div>
+      </motion.div>
+    </PageContainer>
   )
 }

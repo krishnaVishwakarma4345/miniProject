@@ -1,69 +1,59 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useMagnetic } from '@/hooks/useMagnetic'
-import { RefObject, useRef } from 'react'
+import { ScrollReveal } from '@/features/landing/components/ScrollReveal'
 
 const features = [
   {
-    title: 'Student Activity Vault',
-    description: 'Collect evidence, classify achievements, and publish dynamic portfolios with governance controls.',
+    title: 'Smart visual evidence timeline',
+    description: 'Every achievement gets clean chronology, metadata, and proof cards students can curate in seconds.',
+    tone: 'from-amber-100 to-orange-50',
   },
   {
-    title: 'Faculty Review Ops',
-    description: 'Smart queues and contextual moderation help faculty clear pending reviews quickly.',
+    title: 'High-speed faculty moderation',
+    description: 'Left-to-right review lanes help faculty approve, comment, and return entries with minimal context switching.',
+    tone: 'from-sky-100 to-cyan-50',
   },
   {
-    title: 'Institution Dashboards',
-    description: 'See participation, approvals, and category performance at a department and campus level.',
+    title: 'Department intelligence cockpit',
+    description: 'Admin teams track activity participation, category quality, and monthly growth with export-ready snapshots.',
+    tone: 'from-emerald-100 to-lime-50',
   },
   {
-    title: 'Cloudinary Media Pipeline',
-    description: 'Signed uploads, folder strategy, and lifecycle cleanup for secure media operations.',
+    title: 'Secure media flow at scale',
+    description: 'Signed uploads, storage hygiene, and governance controls keep evidence trusted for compliance cycles.',
+    tone: 'from-violet-100 to-fuchsia-50',
   },
 ]
 
-function FeatureCard({ title, description, index }: { title: string; description: string; index: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useMagnetic(ref as RefObject<HTMLElement>, { magnetRadius: 120, strength: 0.5, enabled: true })
-
-  return (
-    <motion.article
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.45, delay: index * 0.12 }}
-      className='group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-5'
-    >
-      <div className='mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300/15 text-cyan-200 transition group-hover:rotate-12 group-hover:scale-110'>
-        {index + 1}
-      </div>
-      <h3 className='text-lg font-semibold text-white'>{title}</h3>
-      <p className='mt-2 text-sm text-slate-300'>{description}</p>
-      <div className='pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-cyan-300/0 transition group-hover:ring-cyan-300/30' />
-    </motion.article>
-  )
-}
-
 export function FeaturesSection() {
   return (
-    <section className='border-b border-white/10 bg-slate-950 py-20'>
+    <section className='border-b border-slate-200 bg-white py-20'>
       <div className='mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8'>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          className='mb-10 max-w-2xl'
-        >
-          <p className='text-xs uppercase tracking-[0.2em] text-cyan-300'>Capabilities</p>
-          <h2 className='mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl'>Built for high-trust academic workflows</h2>
-        </motion.div>
+        <ScrollReveal from='left' className='mb-12 max-w-3xl'>
+          <p className='text-xs font-semibold uppercase tracking-[0.2em] text-sky-700'>Capabilities</p>
+          <h2 className='mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl'>Built to feel fluid as users move through data</h2>
+        </ScrollReveal>
 
-        <div className='grid gap-4 sm:grid-cols-2'>
-          {features.map((feature, index) => (
-            <FeatureCard key={feature.title} title={feature.title} description={feature.description} index={index} />
-          ))}
+        <div className='space-y-6'>
+          {features.map((feature, index) => {
+            const from = index % 2 === 0 ? 'left' : 'right'
+
+            return (
+              <ScrollReveal key={feature.title} from={from} amount={0.3}>
+                <article className='grid items-center gap-6 rounded-3xl border border-slate-200 bg-slate-50 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-8'>
+                  <div>
+                    <div className='mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white'>
+                      {index + 1}
+                    </div>
+                    <h3 className='text-2xl font-bold text-slate-900'>{feature.title}</h3>
+                    <p className='mt-3 max-w-2xl text-slate-700'>{feature.description}</p>
+                  </div>
+
+                  <div className={`h-32 rounded-2xl border border-white bg-gradient-to-br ${feature.tone} shadow-inner`} />
+                </article>
+              </ScrollReveal>
+            )
+          })}
         </div>
       </div>
     </section>

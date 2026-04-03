@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { GoogleSignInButton } from '@/features/auth/components/GoogleSignInButton'
 import { useAuthStore } from '@/store/auth.store'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 /**
  * Register Page
@@ -45,12 +46,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
-    >
+    <PageContainer className='flex justify-center'>
+      <motion.div
+        initial={false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md space-y-6"
+      >
       {/* Heading */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
@@ -95,6 +97,7 @@ export default function RegisterPage() {
       >
         By creating an account, you agree to our Terms of Service and Privacy Policy
       </motion.p>
-    </motion.div>
+      </motion.div>
+    </PageContainer>
   )
 }

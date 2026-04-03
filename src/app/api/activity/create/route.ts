@@ -72,8 +72,6 @@ export async function POST(request: NextRequest) {
 			certificatesAwards: body.certificatesAwards,
 			status: ActivityStatus.SUBMITTED,
 			proofFiles: normalizedProofFiles,
-			assignedTo: categoryReviewer?.uid,
-			assignedToName: categoryReviewer?.name,
 			isFeatured: false,
 			tags: body.tags || [],
 			createdAt: now,
@@ -85,6 +83,7 @@ export async function POST(request: NextRequest) {
 		const payload = {
 			...document,
 			id: activityRef.id,
+			...(categoryReviewer ? { assignedTo: categoryReviewer.uid, assignedToName: categoryReviewer.name } : {}),
 		}
 
 		await activityRef.set(payload)

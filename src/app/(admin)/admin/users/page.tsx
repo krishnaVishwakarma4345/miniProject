@@ -8,6 +8,7 @@ import EditUserModal from '@/features/users/components/EditUserModal'
 import { UpdateUserPayload } from '@/features/users/types/user.types'
 import { UserRole } from '@/types/user.types'
 import { Button } from '@/components/ui/Button'
+import { ScrollReveal } from '@/features/landing/components/ScrollReveal'
 
 export default function AdminUsersPage() {
 	const {
@@ -45,13 +46,15 @@ export default function AdminUsersPage() {
 
 	return (
 		<div className="space-y-8">
-			<section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+			<ScrollReveal from='left'>
+				<section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
 				<p className="text-xs uppercase tracking-[0.4em] text-slate-400">Directory</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">User management</h1>
 				<p className="mt-4 max-w-2xl text-sm text-slate-600">
 					Live institution-scoped user directory from Firestore. Admin actions only affect users in your college.
 				</p>
-			</section>
+				</section>
+			</ScrollReveal>
 
 			{error ? (
 				<Alert variant="error" title="Unable to load users">
@@ -59,16 +62,19 @@ export default function AdminUsersPage() {
 				</Alert>
 			) : null}
 
-			<UserTable
-				users={users}
-				selectedIds={selectedIds}
-				isLoading={isLoading}
-				onSelect={toggleUserSelection}
-				onEdit={openEditor}
-			/>
+			<ScrollReveal from='right'>
+				<UserTable
+					users={users}
+					selectedIds={selectedIds}
+					isLoading={isLoading}
+					onSelect={toggleUserSelection}
+					onEdit={openEditor}
+				/>
+			</ScrollReveal>
 
 			{selectedIds.length > 0 && (
-				<div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+				<ScrollReveal from='left'>
+					<div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div className="flex items-center gap-4">
 							<div>
@@ -105,7 +111,8 @@ export default function AdminUsersPage() {
 							</Button>
 						</div>
 					</div>
-				</div>
+					</div>
+				</ScrollReveal>
 			)}
 
 			<EditUserModal

@@ -73,7 +73,7 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
           />
         </svg>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-3 text-xs text-slate-500">
+      <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-500 sm:grid-cols-3">
         {data.map((item) => (
           <div key={item.label}>
             <p className="font-semibold text-slate-700">{item.label}</p>

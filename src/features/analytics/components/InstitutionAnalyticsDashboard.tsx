@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Alert } from "@/components/feedback/Alert"
 import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
@@ -14,6 +14,7 @@ import ParticipationChart from "@/features/analytics/components/ParticipationCha
 import DepartmentBreakdown from "@/features/analytics/components/DepartmentBreakdown"
 import ActivityCategoryPieChart from "@/features/analytics/components/ActivityCategoryPieChart"
 import { StudentProgressDatum } from "@/features/analytics/types/analytics.types"
+import { ScrollReveal } from "@/features/landing/components/ScrollReveal"
 
 type SortField = "submissions" | "credits"
 type SortOrder = "asc" | "desc"
@@ -56,21 +57,12 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 	}, [data?.studentProgress, search, sortField, sortOrder])
 
 	const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE))
+const currentPage = Math.min(page, totalPages)
 
 	const pagedStudents = useMemo(() => {
-		const start = (page - 1) * PAGE_SIZE
+		const start = (currentPage - 1) * PAGE_SIZE
 		return filteredStudents.slice(start, start + PAGE_SIZE)
-	}, [filteredStudents, page])
-
-	useEffect(() => {
-		setPage(1)
-	}, [search, sortField, sortOrder])
-
-	useEffect(() => {
-		if (page > totalPages) {
-			setPage(totalPages)
-		}
-	}, [page, totalPages])
+	}, [filteredStudents, currentPage])
 
 	const handleExportCsv = () => {
 		const headers = ["Student Name", "Department", "Submissions", "Credits Earned"]
@@ -96,7 +88,8 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 
 	return (
 		<div className="space-y-8">
-			<section className="rounded-3xl border border-blue-100 bg-linear-to-br from-white to-blue-50 p-8">
+			<ScrollReveal from='left'>
+				<section className="rounded-3xl border border-blue-100 bg-linear-to-br from-white to-blue-50 p-8">
 				<p className="text-xs uppercase tracking-[0.4em] text-blue-400">Analytics</p>
 				<h1 className="mt-2 text-3xl font-semibold text-slate-900">{title}</h1>
 				<p className="mt-4 max-w-3xl text-sm text-slate-600">{description}</p>
@@ -115,7 +108,8 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 						<p>{roleLabel}</p>
 					</div>
 				</div>
-			</section>
+				</section>
+			</ScrollReveal>
 
 			{error ? (
 				<Alert variant="error" title="Unable to load analytics">
@@ -123,27 +117,34 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 				</Alert>
 			) : null}
 
-			<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-				{(data?.metrics || []).map((metric, index) => (
-					<MetricCard key={metric.id} metric={metric} delay={index * 0.06} />
-				))}
-			</section>
+			<ScrollReveal from='right'>
+				<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+					{(data?.metrics || []).map((metric, index) => (
+						<MetricCard key={metric.id} metric={metric} delay={index * 0.06} />
+					))}
+				</section>
+			</ScrollReveal>
 
 			{isLoading ? (
 				<p className="text-sm text-slate-500">Loading analytics...</p>
 			) : (
 				<>
-					<section className="grid gap-6 xl:grid-cols-2">
-						<ParticipationChart data={data?.participation || []} title="Submission activity" />
-						<ActivityCategoryPieChart data={data?.categories || []} />
-					</section>
+					<ScrollReveal from='left'>
+						<section className="grid gap-6 xl:grid-cols-2">
+							<ParticipationChart data={data?.participation || []} title="Submission activity" />
+							<ActivityCategoryPieChart data={data?.categories || []} />
+						</section>
+					</ScrollReveal>
 
-					<section className="grid gap-6 xl:grid-cols-2">
-						<MonthlyTrendChart data={data?.trend || []} />
-						<DepartmentBreakdown data={(data?.departments || []).slice(0, 8)} />
-					</section>
+					<ScrollReveal from='right'>
+						<section className="grid gap-6 xl:grid-cols-2">
+							<MonthlyTrendChart data={data?.trend || []} />
+							<DepartmentBreakdown data={(data?.departments || []).slice(0, 8)} />
+						</section>
+					</ScrollReveal>
 
-					<section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+					<ScrollReveal from='left'>
+						<section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 						<div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 							<div>
 								<h2 className="text-xl font-semibold text-slate-900">Students progress</h2>
@@ -153,11 +154,17 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 								<Input
 									placeholder="Search student or department"
 									value={search}
-									onChange={(event) => setSearch(event.target.value)}
+									onChange={(event) => {
+										setSearch(event.target.value)
+										setPage(1)
+									}}
 								/>
 								<Select
 									value={sortField}
-									onChange={(event) => setSortField(event.target.value as SortField)}
+									onChange={(event) => {
+										setSortField(event.target.value as SortField)
+										setPage(1)
+									}}
 									options={[
 										{ label: "Sort: Submissions", value: "submissions" },
 										{ label: "Sort: Credits", value: "credits" },
@@ -165,7 +172,10 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 								/>
 								<Select
 									value={sortOrder}
-									onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+									onChange={(event) => {
+										setSortOrder(event.target.value as SortOrder)
+										setPage(1)
+									}}
 									options={[
 										{ label: "Descending", value: "desc" },
 										{ label: "Ascending", value: "asc" },
@@ -215,25 +225,26 @@ export function InstitutionAnalyticsDashboard({ title, description, roleLabel }:
 
 						<div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<p className="text-sm text-slate-500">
-								Showing {filteredStudents.length ? (page - 1) * PAGE_SIZE + 1 : 0} to{" "}
-								{Math.min(page * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length}
+								Showing {filteredStudents.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0} to{" "}
+								{Math.min(currentPage * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length}
 							</p>
 							<div className="flex items-center gap-2">
-								<Button variant="outline" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page === 1}>
+								<Button variant="outline" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
 									Previous
 								</Button>
-								<span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
+								<span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
 								<Button
 									variant="outline"
 									size="sm"
 									onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-									disabled={page === totalPages}
+									disabled={currentPage === totalPages}
 								>
 									Next
 								</Button>
 							</div>
 						</div>
-					</section>
+						</section>
+					</ScrollReveal>
 				</>
 			)}
 

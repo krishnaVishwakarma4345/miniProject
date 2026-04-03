@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { UserRole } from "@/types/user.types"
+import { PageContainer } from "@/components/layout/PageContainer"
 
 type Institution = {
   id: string
@@ -134,8 +135,8 @@ export default function MasterAdminInstitutionsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <PageContainer className="space-y-8">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Master tenant control</p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Institutions</h1>
         <p className="mt-3 max-w-2xl text-sm text-slate-600">
@@ -143,8 +144,8 @@ export default function MasterAdminInstitutionsPage() {
         </p>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_1.9fr]">
-        <form onSubmit={handleAddInstitution} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_1.9fr]">
+      <form onSubmit={handleAddInstitution} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Add institution</h2>
           <Input
             label="Institution name"
@@ -170,8 +171,8 @@ export default function MasterAdminInstitutionsPage() {
           ) : null}
         </form>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Active institutions</h2>
             <Button type="button" variant="outline" size="sm" onClick={() => void loadInstitutions()} disabled={isLoading || isSaving}>
               Refresh
@@ -186,7 +187,7 @@ export default function MasterAdminInstitutionsPage() {
           ) : activeInstitutions.length ? (
             <ul className="space-y-3">
               {activeInstitutions.map((institution) => (
-                <li key={institution.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3">
+              <li key={institution.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium text-slate-900">{institution.name}</p>
                     <p className="text-xs text-slate-500">Code: {institution.id}</p>
@@ -208,6 +209,6 @@ export default function MasterAdminInstitutionsPage() {
           )}
         </div>
       </section>
-    </div>
+    </PageContainer>
   )
 }

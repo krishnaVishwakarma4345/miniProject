@@ -340,18 +340,18 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 
 	if (mode === 'overview') {
 		return (
-			<div className='grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]'>
-				<aside className='rounded-4xl border border-slate-200 bg-white/95 p-6 shadow-sm'>
-					<div className='flex items-center gap-4'>
+			<div className='grid min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]'>
+				<aside className='min-w-0 rounded-4xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6'>
+					<div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
 						<Avatar src={avatarSrc} alt={profile?.fullName || profileLabel} size='lg' fallback={getInitials(profile?.fullName || profileLabel)} />
-						<div>
+						<div className='min-w-0'>
 							<Badge variant='info' className='mb-2'>{profileLabel}</Badge>
-							<h2 className='text-xl font-semibold text-slate-900'>{profile?.fullName || 'Complete your profile'}</h2>
-							<p className='text-sm text-slate-500'>{profile?.email}</p>
+							<h2 className='break-words text-xl font-semibold text-slate-900'>{profile?.fullName || 'Complete your profile'}</h2>
+							<p className='break-all text-sm text-slate-500'>{profile?.email}</p>
 						</div>
 					</div>
 
-					<div className='mt-6'>
+					<div className='mt-6 min-w-0'>
 						<div className='mb-2 flex items-center justify-between text-sm text-slate-600'>
 							<span>Profile completion</span>
 							<span className='font-semibold text-slate-900'>{completion}%</span>
@@ -359,7 +359,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						<div className='h-2 rounded-full bg-slate-100'>
 							<div className='h-2 rounded-full bg-slate-900 transition-all' style={{ width: `${completion}%` }} />
 						</div>
-						<p className='mt-3 text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, and review flows stay current.</p>
+						<p className='mt-3 break-words text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, and review flows stay current.</p>
 					</div>
 
 					<Link
@@ -370,10 +370,10 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 					</Link>
 				</aside>
 
-				<div className='space-y-6'>
-					<section className='rounded-4xl border border-slate-200 bg-white/95 p-6 shadow-sm'>
+				<div className='min-w-0 space-y-6'>
+					<section className='rounded-4xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6'>
 						<h3 className='text-lg font-semibold text-slate-900'>Basic information</h3>
-						<div className='mt-4 grid gap-4 md:grid-cols-2'>
+						<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 							<InfoCard label='Full name' value={profile?.fullName || 'Not added yet'} />
 							<InfoCard label='Email' value={profile?.email || 'Not available'} />
 							<InfoCard label='Phone' value={profile?.phone || 'Not added yet'} />
@@ -381,9 +381,9 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						</div>
 					</section>
 
-					<section className='rounded-4xl border border-slate-200 bg-white/95 p-6 shadow-sm'>
+					<section className='rounded-4xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6'>
 						<h3 className='text-lg font-semibold text-slate-900'>{role === 'student' ? 'Academic details' : 'Professional details'}</h3>
-						<div className='mt-4 grid gap-4 md:grid-cols-2'>
+						<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 							{role === 'student' ? (
 								<>
 									<InfoCard label='Student ID' value={profile?.studentProfile?.studentId || 'Not added yet'} />
@@ -407,27 +407,27 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 	}
 
 	return (
-		<form onSubmit={handleSave} className='space-y-6 rounded-4xl border border-slate-200 bg-white/95 p-6 shadow-sm'>
+		<form onSubmit={handleSave} className='space-y-6 rounded-4xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6'>
 			<section>
 				<h3 className='text-lg font-semibold text-slate-900'>Basic information</h3>
 				<p className='mt-1 text-sm text-slate-500'>Keep the details that appear across your dashboard and activity history up to date.</p>
-				<div className='mt-4 grid gap-4 md:grid-cols-2'>
+				<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 					<Input label='Full name' value={form.fullName} onChange={(event) => handleChange('fullName', event.target.value)} required />
 					<Input label='Phone' value={form.phone} onChange={(event) => handleChange('phone', event.target.value)} placeholder='+1 555 123 4567' />
-					<Textarea label='Bio' value={form.bio} onChange={(event) => handleChange('bio', event.target.value)} rows={4} containerClassName='md:col-span-2' placeholder='Write a short intro about yourself' />
+					<Textarea label='Bio' value={form.bio} onChange={(event) => handleChange('bio', event.target.value)} rows={4} containerClassName='sm:col-span-2' placeholder='Write a short intro about yourself' />
 				</div>
 			</section>
 
 			<section>
 				<h3 className='text-lg font-semibold text-slate-900'>{role === 'student' ? 'Academic details' : 'Professional details'}</h3>
 				<p className='mt-1 text-sm text-slate-500'>{role === 'student' ? 'Add the academic fields that help your faculty and portfolio views.' : 'Add the core teaching information shown on your faculty profile.'}</p>
-				<div className='mt-4 grid gap-4 md:grid-cols-2'>
+				<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 					{role === 'student' ? (
 						<>
 							<Input label='Student ID' value={form.studentId} onChange={(event) => handleChange('studentId', event.target.value)} required />
 							<Input label='Department' value={form.department} onChange={(event) => handleChange('department', event.target.value)} required />
 							<Select label='Year' value={form.year} onChange={(event) => handleChange('year', event.target.value)} options={YEAR_OPTIONS} placeholder='Select year' required />
-							<Textarea label='Skills' value={form.skills} onChange={(event) => handleChange('skills', event.target.value)} rows={3} containerClassName='md:col-span-2' placeholder='Comma-separated skills, for example: React, Python, Leadership' hint='Use commas to separate multiple skills.' />
+							<Textarea label='Skills' value={form.skills} onChange={(event) => handleChange('skills', event.target.value)} rows={3} containerClassName='sm:col-span-2' placeholder='Comma-separated skills, for example: React, Python, Leadership' hint='Use commas to separate multiple skills.' />
 						</>
 					) : (
 						<>
@@ -436,8 +436,8 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 							<Select label='Designation' value={form.designation} onChange={(event) => handleChange('designation', event.target.value)} options={DESIGNATION_OPTIONS} placeholder='Select designation' required />
 							<Input label='Office' value={form.office} onChange={(event) => handleChange('office', event.target.value)} placeholder='Room number or office name' />
 							<Input label='Phone extension' value={form.phoneExt} onChange={(event) => handleChange('phoneExt', event.target.value)} placeholder='1234' />
-							<Textarea label='Specializations' value={form.specializations} onChange={(event) => handleChange('specializations', event.target.value)} rows={3} containerClassName='md:col-span-2' placeholder='Comma-separated areas of expertise' hint='Use commas to separate multiple specializations.' />
-							<Textarea label='Office hours' value={form.officeHours} onChange={(event) => handleChange('officeHours', event.target.value)} rows={3} containerClassName='md:col-span-2' placeholder='Mon to Wed, 2 PM - 4 PM' />
+							<Textarea label='Specializations' value={form.specializations} onChange={(event) => handleChange('specializations', event.target.value)} rows={3} containerClassName='sm:col-span-2' placeholder='Comma-separated areas of expertise' hint='Use commas to separate multiple specializations.' />
+							<Textarea label='Office hours' value={form.officeHours} onChange={(event) => handleChange('officeHours', event.target.value)} rows={3} containerClassName='sm:col-span-2' placeholder='Mon to Wed, 2 PM - 4 PM' />
 						</>
 					)}
 				</div>

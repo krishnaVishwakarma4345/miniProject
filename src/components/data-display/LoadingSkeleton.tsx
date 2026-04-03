@@ -36,7 +36,7 @@ export function LoadingSkeleton({
 						))}
 					</div>
 				</div>
-				<div className='mt-6 grid grid-cols-3 gap-4'>
+				<div className='mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3'>
 					{Array.from({ length: 3 }).map((_, index) => (
 						<span key={`card-stat-${index}`} className={cx('h-10 rounded-2xl', shimmerClass)} aria-hidden />
 					))}
