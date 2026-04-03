@@ -142,6 +142,21 @@ const calculateCompletion = (role: ProfileRole, profile: ProfileData | null) => 
 	return Math.round((fields.filter(Boolean).length / fields.length) * 100)
 }
 
+const normalizeLastProfileUpdateAt = (value: ProfileData['lastProfileUpdateAt']): number | Date => {
+	if (value instanceof Date || typeof value === 'number') {
+		return value
+	}
+
+	if (typeof value === 'string') {
+		const parsed = Date.parse(value)
+		if (!Number.isNaN(parsed)) {
+			return new Date(parsed)
+		}
+	}
+
+	return new Date()
+}
+
 const updateAuthStore = (profile: ProfileData) => {
 	const currentUser = useAuthStore.getState().user
 	if (!currentUser) return
@@ -154,9 +169,7 @@ const updateAuthStore = (profile: ProfileData) => {
 		avatar: profile.avatar ?? currentUser.avatar,
 		photoURL: profile.photoURL ?? currentUser.photoURL,
 		updatedAt: new Date(),
-		lastProfileUpdateAt: profile.lastProfileUpdateAt ?? new Date(),
-		studentProfile: profile.studentProfile ? { ...currentUser.studentProfile, ...profile.studentProfile } : currentUser.studentProfile,
-		facultyProfile: profile.facultyProfile ? { ...currentUser.facultyProfile, ...profile.facultyProfile } : currentUser.facultyProfile,
+		lastProfileUpdateAt: normalizeLastProfileUpdateAt(profile.lastProfileUpdateAt),
 	}
 
 	useAuthStore.getState().setUser(nextUser)

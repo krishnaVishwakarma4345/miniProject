@@ -219,9 +219,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 		const payload = await request.json()
 		const parsed = userProfileUpdateSchema.safeParse(payload)
 		if (!parsed.success) {
+			const flattened = parsed.error.flatten()
 			return NextResponse.json(
 				new ApiError(parsed.error.issues[0]?.message || 'Invalid profile payload', 'INVALID_PROFILE_PAYLOAD', 400, {
-					details: parsed.error.flatten(),
+					details: flattened.formErrors.join('; ') || 'Profile payload validation failed',
+					fieldErrors: flattened.fieldErrors,
 				}),
 				{ status: 400 }
 			)
