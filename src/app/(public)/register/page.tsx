@@ -34,15 +34,7 @@ export default function RegisterPage() {
   }, [authStore.isAuthenticated, authStore.user, router])
 
   const handleSuccess = () => {
-    const roleDashboards: Record<string, string> = {
-      admin: '/admin/dashboard',
-      master_admin: '/master-admin/institutions',
-      faculty: '/faculty/dashboard',
-      student: '/student/dashboard'
-    }
-    const userRole = authStore.userRole()
-    const dashboardUrl = roleDashboards[userRole || 'student'] || '/student/dashboard'
-    router.push(dashboardUrl)
+    router.push('/login?registered=1')
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/store/ui.store'
@@ -24,7 +25,7 @@ export interface LoginFormProps {
  * - Password visibility toggle
  */
 export function LoginForm({ onSuccess, onError }: LoginFormProps) {
-  const { login, isLoading, error: authError } = useAuth()
+  const { login, resendEmailVerification, isLoading, error: authError } = useAuth()
   const uiStore = useUIStore()
 
   const [email, setEmail] = useState('')
@@ -32,6 +33,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isResendingVerification, setIsResendingVerification] = useState(false)
 
   const formRef = useRef<HTMLFormElement>(null)
   const emailFieldRef = useRef<HTMLDivElement>(null)
@@ -116,6 +118,26 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       onError?.(error instanceof Error ? error.message : 'Login failed')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!email.trim() || !password) {
+      setErrors((prev) => ({
+        ...prev,
+        email: !email.trim() ? 'Email is required to resend verification' : prev.email,
+        password: !password ? 'Password is required to resend verification' : prev.password,
+      }))
+      return
+    }
+
+    setIsResendingVerification(true)
+    try {
+      await resendEmailVerification(email, password)
+    } catch {
+      // Toast is handled in auth hook.
+    } finally {
+      setIsResendingVerification(false)
     }
   }
 
@@ -231,6 +253,17 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         )}
       </AnimatePresence>
 
+      {authError?.code === 'EMAIL_NOT_VERIFIED' ? (
+        <button
+          type="button"
+          onClick={handleResendVerification}
+          disabled={isResendingVerification || isSubmitting || isLoading}
+          className="w-full rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isResendingVerification ? 'Sending verification email...' : 'Resend verification email'}
+        </button>
+      ) : null}
+
       {/* Submit Button */}
       <motion.button
         data-field
@@ -256,9 +289,12 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
       {/* Forgot Password Link */}
       <div data-field className="text-center">
-        <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
+        <Link
+          href={email ? `/forgot-password?email=${encodeURIComponent(email)}` : '/forgot-password'}
+          className="text-sm text-blue-600 hover:text-blue-700"
+        >
           Forgot password?
-        </a>
+        </Link>
       </div>
     </form>
   )

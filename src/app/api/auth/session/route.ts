@@ -58,11 +58,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Extract user info from token
     const userId = decodedToken.uid
+    const signInProvider = decodedToken.firebase?.sign_in_provider
     const roleFromTokenClaims = (decodedToken.role as string | undefined) || (decodedToken.custom_claims?.role as string | undefined)
     const institutionFromTokenClaims = (decodedToken.institutionId as string | undefined) || (decodedToken.org as string | undefined) || (decodedToken.custom_claims?.institutionId as string | undefined) || (decodedToken.custom_claims?.org as string | undefined)
     const userEmail = decodedToken.email
     const normalizedEmail = userEmail?.trim().toLowerCase()
     const isBootstrapMasterAdmin = Boolean(normalizedEmail && MASTER_ADMIN_BOOTSTRAP_EMAILS.has(normalizedEmail))
+
+    if (signInProvider === 'password' && !decodedToken.email_verified) {
+      const apiError = new ApiError('Email must be verified before login', 'EMAIL_NOT_VERIFIED', 403)
+      return NextResponse.json(apiError, { status: apiError.statusCode ?? 403 })
+    }
 
     if (!userEmail) {
       const apiError = new ApiError('Token missing email claim', 'MISSING_EMAIL', 400)

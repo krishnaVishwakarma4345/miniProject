@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { sendEmailVerification, sendPasswordResetEmail, signOut as firebaseClientSignOut } from 'firebase/auth'
 import { signInWithEmail, signInWithGoogle } from '@/lib/firebase/auth/signIn'
 import { signOut as firebaseSignOut } from '@/lib/firebase/auth/signOut'
+import { getEmailVerificationActionCodeSettings, getPasswordResetActionCodeSettings } from '@/lib/firebase/auth/actionCode'
 import { registerWithEmail, registerWithGoogle } from '@/lib/firebase/auth/createUser'
 import { getAuthInstance } from '@/lib/firebase/client'
 import { useAuthStore } from '@/store/auth.store'
@@ -22,6 +24,8 @@ export type UseAuthReturn = {
   loginWithGoogle: (institutionId?: string) => Promise<void>
   register: (email: string, password: string, displayName: string, institutionId: string) => Promise<void>
   registerWithGoogleAuth: (institutionId?: string) => Promise<void>
+  resendEmailVerification: (email: string, password: string) => Promise<void>
+  sendPasswordReset: (email: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
 
@@ -137,6 +141,33 @@ export function useAuth(): UseAuthReturn {
     try {
       // Step 1: Sign in with Firebase
       const userCredential = await signInWithEmail(email, password)
+
+      await userCredential.user.reload()
+
+      if (!userCredential.user.emailVerified) {
+        const auth = await getAuthInstance()
+        let verificationMailSent = true
+
+        try {
+          await sendEmailVerification(
+            userCredential.user,
+            getEmailVerificationActionCodeSettings()
+          )
+        } catch {
+          verificationMailSent = false
+        }
+
+        await firebaseClientSignOut(auth)
+
+        throw new ApiError(
+          verificationMailSent
+            ? 'Email is not verified. We sent a new verification link to your inbox. Please verify first, then login again.'
+            : 'Email is not verified. Please verify your email first and then login again.',
+          'EMAIL_NOT_VERIFIED',
+          403
+        )
+      }
+
       const idToken = await userCredential.user.getIdToken()
 
       // Step 2: Create session cookie on server
@@ -276,7 +307,7 @@ export function useAuth(): UseAuthReturn {
     authStore.setError(null)
 
     try {
-      // Step 1: Register with Firebase (creates both Auth user + Firestore doc)
+      // Step 1: Register with Firebase and send verification email.
       const userCredential = await registerWithEmail(
         email,
         password,
@@ -284,50 +315,16 @@ export function useAuth(): UseAuthReturn {
         institutionId
       )
 
-      const idToken = await userCredential.user.getIdToken()
-
-      // Step 2: Create session cookie on server
-      const sessionData = await createServerSession({
-        idToken,
-        userProfile: {
-          fullName: displayName,
-          displayName,
-          role: UserRole.STUDENT,
-          institutionId,
-          signUpMethod: 'email',
-        },
-      })
-
-      // Step 3: Update Zustand auth store
-      const user: User = {
-        uid: sessionData.userId,
-        id: sessionData.userId,
-        fullName: displayName,
-        email: sessionData.email,
-        displayName: displayName,
-        role: sessionData.role as UserRole,
-        status: UserStatus.ACTIVE,
-        language: 'en',
-        mfaEnabled: false,
-        photoURL: undefined,
-        institutionId: institutionId,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastLogin: new Date(),
-        emailVerified: false,
-        metadata: { signUpMethod: 'email', loginCount: 1 }
-      }
-
-      authStore.setUser(user)
-      authStore.setSessionValid(true)
-      authStore.setIsAuthenticated(true)
+      // Never keep email/password sign-up users logged in before verification.
+      const auth = await getAuthInstance()
+      await firebaseClientSignOut(auth)
+      authStore.clearSession()
 
       uiStore.addToast({
         type: 'success',
-        title: 'Account created!',
-        message: `Welcome to Smart Student Hub, ${displayName}`,
-        duration: 3000
+        title: 'Verify your email',
+        message: `We sent a verification link to ${userCredential.user.email || email}. Verify it before logging in.`,
+        duration: 5000
       })
     } catch (error) {
       const errorMessage =
@@ -345,6 +342,48 @@ export function useAuth(): UseAuthReturn {
       uiStore.addToast({
         type: 'error',
         title: 'Registration failed',
+        message: apiError.error,
+        duration: 5000
+      })
+      throw apiError
+    } finally {
+      authStore.setIsLoading(false)
+    }
+  }
+
+  /**
+   * Send forgot-password reset email
+   */
+  const sendPasswordReset = async (email: string): Promise<void> => {
+    authStore.setIsLoading(true)
+    authStore.setError(null)
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase()
+      const auth = await getAuthInstance()
+
+      await sendPasswordResetEmail(
+        auth,
+        normalizedEmail,
+        getPasswordResetActionCodeSettings()
+      )
+
+      uiStore.addToast({
+        type: 'success',
+        title: 'Reset email sent',
+        message: 'Check your inbox to reset your password.',
+        duration: 4000
+      })
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : new ApiError(
+        error instanceof Error ? error.message : 'Unable to send reset email',
+        'PASSWORD_RESET_EMAIL_ERROR'
+      )
+
+      authStore.setError(apiError)
+      uiStore.addToast({
+        type: 'error',
+        title: 'Password reset failed',
         message: apiError.error,
         duration: 5000
       })
@@ -436,6 +475,62 @@ export function useAuth(): UseAuthReturn {
   }
 
   /**
+   * Re-send verification email for email/password accounts
+   */
+  const resendEmailVerification = async (email: string, password: string): Promise<void> => {
+    authStore.setIsLoading(true)
+    authStore.setError(null)
+
+    try {
+      const userCredential = await signInWithEmail(email, password)
+      await userCredential.user.reload()
+
+      const auth = await getAuthInstance()
+
+      if (userCredential.user.emailVerified) {
+        await firebaseClientSignOut(auth)
+        uiStore.addToast({
+          type: 'info',
+          title: 'Already verified',
+          message: 'This email is already verified. You can login now.',
+          duration: 4000
+        })
+        return
+      }
+
+      await sendEmailVerification(
+        userCredential.user,
+        getEmailVerificationActionCodeSettings()
+      )
+
+      await firebaseClientSignOut(auth)
+
+      uiStore.addToast({
+        type: 'success',
+        title: 'Verification email sent',
+        message: 'Check your inbox for a new verification link.',
+        duration: 5000
+      })
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : new ApiError(
+        error instanceof Error ? error.message : 'Failed to resend verification email',
+        'RESEND_VERIFICATION_ERROR'
+      )
+
+      authStore.setError(apiError)
+      uiStore.addToast({
+        type: 'error',
+        title: 'Unable to resend verification email',
+        message: apiError.error,
+        duration: 5000
+      })
+      throw apiError
+    } finally {
+      authStore.setIsLoading(false)
+    }
+  }
+
+  /**
    * Logout user
    * Clears session cookie on server, signs out from Firebase, clears auth store
    */
@@ -494,6 +589,8 @@ export function useAuth(): UseAuthReturn {
     loginWithGoogle,
     register,
     registerWithGoogleAuth,
+    resendEmailVerification,
+    sendPasswordReset,
     logout,
     clearError,
     restoreSession

@@ -8,6 +8,7 @@
 import {
   createUserWithEmailAndPassword,
   updateProfile,
+  sendEmailVerification,
   signInWithPopup,
   GoogleAuthProvider,
   UserCredential,
@@ -15,6 +16,7 @@ import {
 } from "firebase/auth";
 import { getAuthInstance, getFirestoreInstance } from "../client";
 import { setUser } from "./../../firebase/firestore/users.repository";
+import { getEmailVerificationActionCodeSettings } from "./actionCode";
 import { UserRole, User, UserStatus } from "@/types/user.types";
 import { ApiError } from "@/types/api.types";
 
@@ -61,6 +63,11 @@ export const registerWithEmail = async (
       await updateProfile(userCredential.user, {
         displayName,
       });
+
+      await sendEmailVerification(
+        userCredential.user,
+        getEmailVerificationActionCodeSettings()
+      );
 
       // Attempt to create user profile document. If Firestore client is unavailable,
       // keep auth registration successful and let profile bootstrap happen later.

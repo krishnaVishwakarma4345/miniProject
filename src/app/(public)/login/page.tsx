@@ -20,6 +20,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const authStore = useAuthStore()
   const redirect = searchParams.get('redirect')
+  const registered = searchParams.get('registered') === '1'
+  const verified = searchParams.get('verified') === '1'
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -63,6 +65,18 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
         <p className="text-gray-600">Sign in to your account to continue</p>
       </div>
+
+      {registered ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          Registration successful. Check your inbox and verify your email before logging in.
+        </div>
+      ) : null}
+
+      {verified ? (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+          Email verification completed. You can login now.
+        </div>
+      ) : null}
 
       {/* Login Form */}
       <LoginForm onSuccess={handleSuccess} />
