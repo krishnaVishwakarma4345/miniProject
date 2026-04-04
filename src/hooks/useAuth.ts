@@ -170,8 +170,19 @@ export function useAuth(): UseAuthReturn {
 
       const idToken = await userCredential.user.getIdToken()
 
+      // Retrieve institution from sessionStorage if available (set during registration)
+      const registrationInstitutionId = typeof window !== 'undefined' 
+        ? window.sessionStorage.getItem('auth-registration-institution-id') || undefined
+        : undefined
+
       // Step 2: Create session cookie on server
-      const sessionData = await createServerSession({ idToken })
+      const sessionData = await createServerSession({ 
+        idToken,
+        userProfile: registrationInstitutionId ? {
+          institutionId: registrationInstitutionId,
+          signUpMethod: 'email',
+        } : undefined
+      })
 
       // Step 3: Update Zustand auth store
       const user: User = {
@@ -197,6 +208,11 @@ export function useAuth(): UseAuthReturn {
       authStore.setUser(user)
       authStore.setSessionValid(true)
       authStore.setIsAuthenticated(true)
+
+      // Clear registration institution from sessionStorage after successful login
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('auth-registration-institution-id')
+      }
 
       uiStore.addToast({
         type: 'success',
