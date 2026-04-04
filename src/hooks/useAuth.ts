@@ -277,6 +277,13 @@ export function useAuth(): UseAuthReturn {
         duration: 3000
       })
     } catch (error) {
+      try {
+        const auth = await getAuthInstance()
+        await firebaseClientSignOut(auth)
+      } catch {
+        // Ignore sign-out cleanup failures in error path.
+      }
+
       const apiError = error instanceof ApiError ? error : new ApiError(
         error instanceof Error ? error.message : 'Google login failed',
         'GOOGLE_LOGIN_ERROR'
@@ -457,6 +464,13 @@ export function useAuth(): UseAuthReturn {
         duration: 3000
       })
     } catch (error) {
+      try {
+        const auth = await getAuthInstance()
+        await firebaseClientSignOut(auth)
+      } catch {
+        // Ignore sign-out cleanup failures in error path.
+      }
+
       const apiError = error instanceof ApiError ? error : new ApiError(
         error instanceof Error ? error.message : 'Google registration failed',
         'GOOGLE_REGISTER_ERROR'

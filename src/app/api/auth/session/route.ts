@@ -120,6 +120,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
+if (signInProvider === 'google.com' && normalizedEmail) {
+      const emailMatches = await adminDb
+        .collection('users')
+        .where('email', '==', normalizedEmail)
+        .limit(2)
+        .get()
+
+      const hasDifferentUidForSameEmail = emailMatches.docs.some((doc) => doc.id !== userId)
+      if (hasDifferentUidForSameEmail) {
+        const apiError = new ApiError(
+          'This email is already attached to another account. Please sign in with your password for this email to keep credentials consistent.',
+          'EMAIL_PROVIDER_CONFLICT',
+          409
+        )
+        return NextResponse.json(apiError, { status: apiError.statusCode ?? 409 })
+      }
+    }
+
     const resolvedRole = isBootstrapMasterAdmin
       ? UserRole.MASTER_ADMIN
       : normalizeRole(existingData?.role)
