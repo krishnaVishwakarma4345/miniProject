@@ -22,6 +22,7 @@ export default function LoginPage() {
   const redirect = searchParams.get('redirect')
   const registered = searchParams.get('registered') === '1'
   const verified = searchParams.get('verified') === '1'
+  const reset = searchParams.get('reset') === '1'
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -75,6 +76,12 @@ export default function LoginPage() {
       {verified ? (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
           Email verification completed. You can login now.
+        </div>
+      ) : null}
+
+      {reset ? (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+          Password updated successfully. Please login with your new password.
         </div>
       ) : null}
 

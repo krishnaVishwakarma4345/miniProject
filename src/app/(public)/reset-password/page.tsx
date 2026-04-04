@@ -24,8 +24,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const validateCode = async () => {
       if (!oobCode) {
-        setError('Invalid or missing reset code.')
-        setLoading(false)
+        router.replace('/login?reset=1')
         return
       }
 
@@ -41,7 +40,7 @@ export default function ResetPasswordPage() {
     }
 
     void validateCode()
-  }, [oobCode])
+  }, [oobCode, router])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -64,7 +63,7 @@ export default function ResetPasswordPage() {
       await confirmPasswordReset(auth, oobCode, password)
       setSuccess('Password reset successful. Redirecting to login...')
       setTimeout(() => {
-        router.replace('/login')
+        router.replace('/login?reset=1')
       }, 1200)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to reset password.')
