@@ -20,7 +20,7 @@ const testimonials = [
 export function TestimonialsSection() {
   return (
     <section className='border-b border-slate-200 bg-slate-50 py-20'>
-      <div className='mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8'>
+      {/* <div className='mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8'>
         <ScrollReveal from='left'>
           <h2 className='mb-8 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl'>Trusted by academic leaders</h2>
         </ScrollReveal>
@@ -40,7 +40,7 @@ export function TestimonialsSection() {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
     </section>
   )
 }

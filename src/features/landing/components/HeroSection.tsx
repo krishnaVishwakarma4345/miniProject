@@ -33,11 +33,11 @@ export function HeroSection() {
             className='mt-8 flex flex-wrap gap-3'
           >
             <Link href='/register'>
-              <Button size='lg' className='rounded-full bg-slate-900 px-7 text-white hover:bg-slate-800'>Start Free Pilot</Button>
+              <Button size='lg' className='rounded-full bg-slate-900 px-7 text-white hover:bg-slate-800'>Sign up</Button>
             </Link>
             <Link href='/login'>
               <Button variant='outline' size='lg' className='rounded-full border-slate-300 bg-white/70 px-7 text-slate-800 hover:bg-white'>
-                Watch Faculty Demo
+                Login to your account
               </Button>
             </Link>
           </motion.div>
