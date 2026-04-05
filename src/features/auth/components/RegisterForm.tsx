@@ -254,10 +254,10 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                       errors.email
                         ? 'border-red-500 text-red-600'
                         : emailAvailable === false
-                        ? 'border-red-500'
+                        ? 'border-red-500 text-black placeholder:text-gray-500'
                         : emailAvailable === true && email
-                        ? 'border-green-500'
-                        : 'border-gray-300 focus:border-blue-500'
+                        ? 'border-green-500 text-black placeholder:text-gray-500'
+                        : 'border-gray-300 text-black placeholder:text-gray-500 focus:border-blue-500'
                     } outline-none`}
                   />
                   {checkingEmail && (
@@ -287,7 +287,9 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                     }}
                     placeholder="••••••••"
                     className={`w-full px-4 py-2 border-b-2 bg-transparent transition-colors ${
-                      errors.password ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      errors.password
+                        ? 'border-red-500 text-black placeholder:text-gray-500'
+                        : 'border-gray-300 text-black placeholder:text-gray-500 focus:border-blue-500'
                     } outline-none`}
                   />
                   <button
@@ -320,7 +322,9 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                   }}
                   placeholder="••••••••"
                   className={`w-full px-4 py-2 border-b-2 bg-transparent transition-colors ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    errors.confirmPassword
+                      ? 'border-red-500 text-black placeholder:text-gray-500'
+                      : 'border-gray-300 text-black placeholder:text-gray-500 focus:border-blue-500'
                   } outline-none`}
                 />
                 {errors.confirmPassword && (
@@ -359,7 +363,9 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                   }}
                   placeholder="John Doe"
                   className={`w-full px-4 py-2 border-b-2 bg-transparent transition-colors ${
-                    errors.displayName ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    errors.displayName
+                      ? 'border-red-500 text-black placeholder:text-gray-500'
+                      : 'border-gray-300 text-black placeholder:text-gray-500 focus:border-blue-500'
                   } outline-none`}
                 />
                 {errors.displayName && (
@@ -404,7 +410,9 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                     if (errors.institutionId) setErrors({ ...errors, institutionId: '' })
                   }}
                   className={`w-full px-4 py-2 border-2 rounded-lg transition-colors ${
-                    errors.institutionId ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    errors.institutionId
+                      ? 'border-red-500 text-black'
+                      : 'border-gray-300 text-black focus:border-blue-500'
                   } outline-none`}
                 >
                   <option value="">
