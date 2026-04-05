@@ -48,6 +48,13 @@ export const studentProfileSchema = z.object({
     .min(1, "Year must be between 1 and 4")
     .max(4, "Year must be between 1 and 4"),
 
+  academicYear: z
+    .number()
+    .int()
+    .min(1, "Academic year must be between 1 and 4")
+    .max(4, "Academic year must be between 1 and 4")
+    .optional(),
+
   semester: z
     .number()
     .int()

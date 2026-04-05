@@ -54,6 +54,7 @@ export const STUDENT_ROUTES = {
 export const FACULTY_ROUTES = {
   DASHBOARD: "/faculty/dashboard",
   ANALYTICS: "/faculty/analytics",
+  STUDENT_PROGRESS: "/faculty/student-progress",
   REVIEW_QUEUE: "/faculty/review",
   REVIEW_DETAIL: (id: string) => `/faculty/review/${id}`,
   STUDENTS: "/faculty/students",
@@ -78,6 +79,7 @@ export const ADMIN_ROUTES = {
   USER_DETAIL: (id: string) => `/admin/users/${id}`,
   USER_EDIT: (id: string) => `/admin/users/${id}/edit`,
   ANALYTICS: "/admin/analytics",
+  STUDENT_PROGRESS: "/admin/student-progress",
   REPORTS: "/admin/reports",
   ACTIVITIES: "/admin/activities",
   ACTIVITY_DETAIL: (id: string) => `/admin/activities/${id}`,
@@ -202,6 +204,7 @@ export const ROLE_ROUTES = {
   faculty: [
     FACULTY_ROUTES.DASHBOARD,
     FACULTY_ROUTES.ANALYTICS,
+    FACULTY_ROUTES.STUDENT_PROGRESS,
     FACULTY_ROUTES.REVIEW_QUEUE,
     FACULTY_ROUTES.STUDENTS,
     FACULTY_ROUTES.PORTFOLIOS,
@@ -215,6 +218,7 @@ export const ROLE_ROUTES = {
     ADMIN_ROUTES.DASHBOARD,
     ADMIN_ROUTES.USERS,
     ADMIN_ROUTES.ANALYTICS,
+    ADMIN_ROUTES.STUDENT_PROGRESS,
     ADMIN_ROUTES.REPORTS,
     ADMIN_ROUTES.ACTIVITIES,
     ADMIN_ROUTES.DEPARTMENTS,

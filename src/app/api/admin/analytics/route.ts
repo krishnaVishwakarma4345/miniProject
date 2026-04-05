@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Activity, ActivityStatus, ApiResponse, UserRole, UserStatus } from '@/types'
+import { StudentProfile } from '@/types/user.types'
 import { parseSessionCookie } from '@/lib/firebase/auth/createSessionCookie'
 import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
@@ -8,11 +9,13 @@ import { ensureInstitutionActivityMirror, getInstitutionActivitiesCollection } f
 
 interface UserProfile {
 	uid?: string
+	fullName?: string
+	email?: string
 	role?: UserRole
 	status?: UserStatus
 	institutionId?: string
-	studentProfile?: { department?: string }
-	email?: string
+	profileCompletion?: number
+	studentProfile?: Partial<StudentProfile> & { academicYear?: number }
 }
 
 const extractInstitutionFromPath = (path: string): string | undefined => {
@@ -155,11 +158,33 @@ export async function GET(request: NextRequest) {
 
 		const categories = Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }))
 
-		const studentDepartmentByUid = new Map<string, string>()
+		const studentProfilesByUid = new Map<string, StudentProgressDatum['studentProfile']>()
 		users.forEach((user) => {
 			if (user.role === UserRole.STUDENT && user.uid) {
-				studentDepartmentByUid.set(user.uid, user.studentProfile?.department || 'General')
+				const semesterCgpa = (user.studentProfile?.semesterCgpa || [])
+					.filter((entry) => typeof entry?.semester === 'number' && typeof entry?.cgpa === 'number')
+					.map((entry) => ({ semester: entry.semester as number, cgpa: entry.cgpa as number }))
+					.sort((a, b) => a.semester - b.semester)
+
+				studentProfilesByUid.set(user.uid, {
+					studentId: user.studentProfile?.studentId,
+					academicYear: user.studentProfile?.academicYear ?? user.studentProfile?.year,
+					year: user.studentProfile?.year,
+					semester: user.studentProfile?.semester,
+					division: user.studentProfile?.division,
+					branch: user.studentProfile?.branch,
+					rollNo: user.studentProfile?.rollNo,
+					department: user.studentProfile?.department || 'General',
+					cgpa: user.studentProfile?.cgpa,
+					semesterCgpa,
+					profileCompletion: user.profileCompletion,
+				})
 			}
+		})
+
+		const studentDepartmentByUid = new Map<string, string>()
+		studentProfilesByUid.forEach((profile, uid) => {
+			studentDepartmentByUid.set(uid, profile?.department || 'General')
 		})
 
 		const departmentMap = new Map<string, number>()
@@ -217,17 +242,24 @@ export async function GET(request: NextRequest) {
 
 		const studentProgressMap = new Map<string, StudentProgressDatum>()
 		activities.forEach((activity) => {
+			const studentProfile = studentProfilesByUid.get(activity.submittedBy)
 			const existing = studentProgressMap.get(activity.submittedBy) || {
 				studentId: activity.submittedBy,
 				name: activity.submittedByName,
+				email: undefined,
 				department: studentDepartmentByUid.get(activity.submittedBy),
+				studentProfile,
+				approvedActivities: 0,
 				totalSubmissions: 0,
 				totalCredits: 0,
 				submissions: [],
 			}
 
 			existing.totalSubmissions += 1
-			existing.totalCredits += activity.pointsAwarded || 0
+			if (activity.status === ActivityStatus.APPROVED) {
+				existing.approvedActivities += 1
+				existing.totalCredits += activity.pointsAwarded || 0
+			}
 			existing.submissions.push({
 				activityId: activity.id,
 				title: activity.title,
@@ -235,7 +267,11 @@ export async function GET(request: NextRequest) {
 				status: activity.status,
 				activityDate: activity.activityDate,
 				createdAt: activity.createdAt,
-				pointsAwarded: activity.pointsAwarded || 0,
+				pointsAwarded: activity.status === ActivityStatus.APPROVED ? activity.pointsAwarded || 0 : 0,
+				year: activity.year,
+				semester: activity.semester,
+				division: activity.division,
+				branch: activity.branch,
 			})
 
 			studentProgressMap.set(activity.submittedBy, existing)

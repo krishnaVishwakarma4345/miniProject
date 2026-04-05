@@ -17,6 +17,7 @@ const NAV_LINKS = [
 	{ label: "Overview", href: "/faculty/dashboard" },
 	{ label: "Review queue", href: "/faculty/review" },
 	{ label: "Analytics", href: "/faculty/analytics" },
+	{ label: "Student progress", href: "/faculty/student-progress" },
 	{ label: "Profile", href: "/faculty/profile" },
 ]
 

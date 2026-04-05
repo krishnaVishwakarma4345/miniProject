@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, useCallback, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, Button, Input, Select, Spinner, Textarea } from '@/components/ui'
+import { CATEGORY_LABELS } from '@/constants/activityCategories'
+import { ActivityCategory, User, UserRole } from '@/types'
 import { useAuthStore } from '@/store/auth.store'
 import { useUIStore } from '@/store/ui.store'
-import { User, UserRole } from '@/types'
 
 type ProfileRole = 'student' | 'faculty'
 type ProfileMode = 'overview' | 'edit'
@@ -24,6 +25,7 @@ type ProfileData = {
 	studentProfile?: {
 		studentId?: string
 		department?: string
+		academicYear?: number
 		year?: number
 		semester?: number
 		division?: string
@@ -40,6 +42,7 @@ type ProfileData = {
 		office?: string
 		phoneExt?: string
 		specializations?: string[]
+		reviewCategories?: ActivityCategory[]
 		officeHours?: string
 		isAvailable?: boolean
 	}
@@ -127,6 +130,9 @@ const splitList = (value: string) =>
 
 const joinList = (items?: string[]) => (items?.length ? items.join(', ') : '')
 
+const hasSameCategories = (a: ActivityCategory[], b: ActivityCategory[]) =>
+	a.length === b.length && a.every((category, index) => category === b[index])
+
 const getInitials = (name: string) =>
 	name
 		.split(' ')
@@ -145,7 +151,7 @@ const calculateCompletion = (role: ProfileRole, profile: ProfileData | null) => 
 			profile.fullName,
 			profile.phone,
 			profile.studentProfile?.studentId,
-			profile.studentProfile?.year,
+			profile.studentProfile?.academicYear ?? profile.studentProfile?.year,
 			profile.studentProfile?.semester,
 			profile.studentProfile?.division,
 			profile.studentProfile?.rollNo,
@@ -221,6 +227,32 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState('')
 
+	const applyProfileToState = useCallback((nextProfile: ProfileData | null) => {
+		setProfile(nextProfile)
+		if (nextProfile) {
+			updateAuthStore(nextProfile)
+		}
+		setForm({
+			fullName: nextProfile?.fullName || '',
+			phone: nextProfile?.phone || '',
+			bio: nextProfile?.bio || '',
+			studentId: nextProfile?.studentProfile?.studentId || '',
+			department: nextProfile?.studentProfile?.department || nextProfile?.facultyProfile?.department || '',
+			year: nextProfile?.studentProfile?.academicYear ? String(nextProfile.studentProfile.academicYear) : nextProfile?.studentProfile?.year ? String(nextProfile.studentProfile.year) : '',
+			semester: nextProfile?.studentProfile?.semester ? String(nextProfile.studentProfile.semester) : '',
+			division: nextProfile?.studentProfile?.division || '',
+			rollNo: nextProfile?.studentProfile?.rollNo || '',
+			branch: nextProfile?.studentProfile?.branch || '',
+			skills: joinList(nextProfile?.studentProfile?.skills),
+			employeeId: nextProfile?.facultyProfile?.employeeId || '',
+			designation: nextProfile?.facultyProfile?.designation || '',
+			office: nextProfile?.facultyProfile?.office || '',
+			phoneExt: nextProfile?.facultyProfile?.phoneExt || '',
+			specializations: joinList(nextProfile?.facultyProfile?.specializations),
+			officeHours: nextProfile?.facultyProfile?.officeHours || '',
+		})
+	}, [])
+
 	useEffect(() => {
 		let isMounted = true
 
@@ -243,29 +275,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 
 				if (!isMounted) return
 
-				setProfile(nextProfile)
-				if (nextProfile) {
-					updateAuthStore(nextProfile)
-				}
-				setForm({
-					fullName: nextProfile?.fullName || '',
-					phone: nextProfile?.phone || '',
-					bio: nextProfile?.bio || '',
-					studentId: nextProfile?.studentProfile?.studentId || '',
-					department: nextProfile?.studentProfile?.department || nextProfile?.facultyProfile?.department || '',
-					year: nextProfile?.studentProfile?.year ? String(nextProfile.studentProfile.year) : '',
-					semester: nextProfile?.studentProfile?.semester ? String(nextProfile.studentProfile.semester) : '',
-					division: nextProfile?.studentProfile?.division || '',
-					rollNo: nextProfile?.studentProfile?.rollNo || '',
-					branch: nextProfile?.studentProfile?.branch || '',
-					skills: joinList(nextProfile?.studentProfile?.skills),
-					employeeId: nextProfile?.facultyProfile?.employeeId || '',
-					designation: nextProfile?.facultyProfile?.designation || '',
-					office: nextProfile?.facultyProfile?.office || '',
-					phoneExt: nextProfile?.facultyProfile?.phoneExt || '',
-					specializations: joinList(nextProfile?.facultyProfile?.specializations),
-					officeHours: nextProfile?.facultyProfile?.officeHours || '',
-				})
+				applyProfileToState(nextProfile)
 			} catch (loadError) {
 				if (!isMounted) return
 				setError(loadError instanceof Error ? loadError.message : 'Failed to load profile')
@@ -279,11 +289,73 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 		return () => {
 			isMounted = false
 		}
-	}, [])
+	}, [applyProfileToState])
+
+	useEffect(() => {
+		if (role !== 'faculty' || mode !== 'overview') {
+			return
+		}
+
+		let cancelled = false
+
+		const syncFacultyReviewCategories = async () => {
+			try {
+				const response = await fetch('/api/user/profile', {
+					credentials: 'include',
+					cache: 'no-store',
+				})
+
+				if (!response.ok) {
+					return
+				}
+
+				const payload = (await response.json()) as { profile?: ProfileData }
+				const nextProfile = payload.profile || null
+				if (!nextProfile || cancelled) {
+					return
+				}
+
+				setProfile((current) => {
+					const currentCategories = current?.facultyProfile?.reviewCategories ?? []
+					const nextCategories = nextProfile.facultyProfile?.reviewCategories ?? []
+
+					if (hasSameCategories(currentCategories, nextCategories)) {
+						return current
+					}
+
+					updateAuthStore(nextProfile)
+					return nextProfile
+				})
+			} catch {
+				// Silent background sync; initial load/save paths handle user-facing errors.
+			}
+		}
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === 'visible') {
+				void syncFacultyReviewCategories()
+			}
+		}
+
+		const intervalId = window.setInterval(() => {
+			void syncFacultyReviewCategories()
+		}, 10000)
+
+		window.addEventListener('focus', syncFacultyReviewCategories)
+		document.addEventListener('visibilitychange', handleVisibilityChange)
+
+		return () => {
+			cancelled = true
+			window.clearInterval(intervalId)
+			window.removeEventListener('focus', syncFacultyReviewCategories)
+			document.removeEventListener('visibilitychange', handleVisibilityChange)
+		}
+	}, [mode, role])
 
 	const completion = useMemo(() => calculateCompletion(role, profile), [profile, role])
 	const profileLabel = getRoleLabel(role)
 	const avatarSrc = profile?.avatar || profile?.photoURL || undefined
+	const facultyReviewCategories = profile?.facultyProfile?.reviewCategories ?? []
 
 	const handleChange = (field: keyof FormState, value: string) => {
 		setForm((current) => ({ ...current, [field]: value }))
@@ -304,6 +376,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						studentId: form.studentId.trim() || undefined,
 						department: form.department.trim() || undefined,
 						year: form.year ? Number(form.year) : undefined,
+						academicYear: form.year ? Number(form.year) : undefined,
 						semester: form.semester ? Number(form.semester) : undefined,
 						division: form.division.trim() || undefined,
 						rollNo: form.rollNo.trim() || undefined,
@@ -338,30 +411,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 			}
 
 			const nextProfile = responseBody?.profile as ProfileData
-			setProfile(nextProfile)
-			if (nextProfile) {
-				updateAuthStore(nextProfile)
-			}
-			setForm({
-				fullName: nextProfile?.fullName || '',
-				phone: nextProfile?.phone || '',
-				bio: nextProfile?.bio || '',
-				studentId: nextProfile?.studentProfile?.studentId || '',
-				department: nextProfile?.studentProfile?.department || nextProfile?.facultyProfile?.department || '',
-				year: nextProfile?.studentProfile?.year ? String(nextProfile.studentProfile.year) : '',
-				semester: nextProfile?.studentProfile?.semester ? String(nextProfile.studentProfile.semester) : '',
-				division: nextProfile?.studentProfile?.division || '',
-				rollNo: nextProfile?.studentProfile?.rollNo || '',
-				branch: nextProfile?.studentProfile?.branch || '',
-				skills: joinList(nextProfile?.studentProfile?.skills),
-				employeeId: nextProfile?.facultyProfile?.employeeId || '',
-				designation: nextProfile?.facultyProfile?.designation || '',
-				office: nextProfile?.facultyProfile?.office || '',
-				phoneExt: nextProfile?.facultyProfile?.phoneExt || '',
-				specializations: joinList(nextProfile?.facultyProfile?.specializations),
-				officeHours: nextProfile?.facultyProfile?.officeHours || '',
-			})
-			updateAuthStore(nextProfile)
+			applyProfileToState(nextProfile)
 			addToast({
 				type: 'success',
 				title: 'Profile updated',
@@ -418,7 +468,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						<div className='h-2 rounded-full bg-slate-100'>
 							<div className='h-2 rounded-full bg-slate-900 transition-all' style={{ width: `${completion}%` }} />
 						</div>
-						<p className='mt-3 wrap-break-word text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, and review flows stay current.</p>
+						<p className='mt-3 wrap-break-word text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, review flows, and academic-year filters stay current.</p>
 					</div>
 
 					<Link
@@ -446,7 +496,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 							{role === 'student' ? (
 								<>
 									<InfoCard label='Student ID' value={profile?.studentProfile?.studentId || 'Not added yet'} />
-									<InfoCard label='Year' value={profile?.studentProfile?.year ? `Year ${profile.studentProfile.year}` : 'Not added yet'} />
+									<InfoCard label='Academic year' value={profile?.studentProfile?.academicYear || profile?.studentProfile?.year ? `Year ${profile.studentProfile.academicYear || profile.studentProfile.year}` : 'Not added yet'} />
 									<InfoCard label='Semester' value={profile?.studentProfile?.semester ? `Sem ${profile.studentProfile.semester}` : 'Not added yet'} />
 									<InfoCard label='Branch' value={profile?.studentProfile?.branch || 'Not added yet'} />
 									<InfoCard label='Division' value={profile?.studentProfile?.division || 'Not added yet'} />
@@ -463,6 +513,26 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 							)}
 						</div>
 					</section>
+
+					{role === 'faculty' ? (
+						<section className='rounded-4xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6'>
+							<h3 className='text-lg font-semibold text-slate-900'>Review responsibilities</h3>
+							<p className='mt-1 text-sm text-slate-500'>These are the activity categories you are assigned to verify.</p>
+							{facultyReviewCategories.length ? (
+								<div className='mt-4 flex flex-wrap gap-2'>
+									{facultyReviewCategories.map((category) => (
+										<Badge key={category} variant='info'>
+											{CATEGORY_LABELS[category]}
+										</Badge>
+									))}
+								</div>
+							) : (
+								<p className='mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
+									No review categories assigned yet. Ask your admin to assign categories so you can verify submissions.
+								</p>
+							)}
+						</section>
+					) : null}
 				</div>
 			</div>
 		)
@@ -482,12 +552,12 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 
 			<section>
 				<h3 className='text-lg font-semibold text-slate-900'>{role === 'student' ? 'Academic details' : 'Professional details'}</h3>
-				<p className='mt-1 text-sm text-slate-500'>{role === 'student' ? 'Add the academic fields that help your faculty and portfolio views.' : 'Add the core teaching information shown on your faculty profile.'}</p>
+						<p className='mt-1 text-sm text-slate-500'>{role === 'student' ? 'Add the academic fields that help your faculty and portfolio views. Academic year is required for progress filters.' : 'Add the core teaching information shown on your faculty profile.'}</p>
 				<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 					{role === 'student' ? (
 						<>
 							<Input label='Student ID' value={form.studentId} onChange={(event) => handleChange('studentId', event.target.value)} required />
-							<Select label='Year' value={form.year} onChange={(event) => handleChange('year', event.target.value)} options={YEAR_OPTIONS} placeholder='Select year' required />
+									<Select label='Academic year' value={form.year} onChange={(event) => handleChange('year', event.target.value)} options={YEAR_OPTIONS} placeholder='Select academic year' required />
 							<Select label='Semester' value={form.semester} onChange={(event) => handleChange('semester', event.target.value)} options={SEMESTER_OPTIONS} placeholder='Select semester' required />
 							<Input label='Division' value={form.division} onChange={(event) => handleChange('division', event.target.value)} required />
 							<Input label='Roll number' value={form.rollNo} onChange={(event) => handleChange('rollNo', event.target.value)} required />

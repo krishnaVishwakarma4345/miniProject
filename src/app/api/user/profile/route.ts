@@ -91,7 +91,7 @@ const calculateCompletion = (profile: ProfileRecord) => {
 		profile.fullName,
 		profile.phone,
 		profile.studentProfile?.studentId,
-		profile.studentProfile?.year,
+		profile.studentProfile?.academicYear ?? profile.studentProfile?.year,
 		profile.studentProfile?.semester,
 		profile.studentProfile?.division,
 		profile.studentProfile?.rollNo,
@@ -124,7 +124,12 @@ const buildProfileResponse = (profile: ProfileRecord) => ({
 	photoURL: profile.photoURL ?? null,
 	bio: profile.bio,
 	institutionId: profile.institutionId ?? null,
-	studentProfile: profile.studentProfile,
+	studentProfile: profile.studentProfile
+		? {
+			...profile.studentProfile,
+			academicYear: profile.studentProfile.academicYear ?? profile.studentProfile.year,
+		}
+		: profile.studentProfile,
 	facultyProfile: profile.facultyProfile,
 	profileCompletion: profile.profileCompletion ?? calculateCompletion(profile),
 	lastProfileUpdateAt: profile.lastProfileUpdateAt ?? profile.updatedAt ?? null,
@@ -249,7 +254,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 				...studentProfile,
 				studentId: normalizeString(updates.studentProfile?.studentId) || studentProfile.studentId,
 				department: normalizeString(updates.studentProfile?.department) || studentProfile.department,
-				year: updates.studentProfile?.year ?? studentProfile.year,
+				year: updates.studentProfile?.year ?? updates.studentProfile?.academicYear ?? studentProfile.year,
+				academicYear: updates.studentProfile?.academicYear ?? updates.studentProfile?.year ?? studentProfile.academicYear ?? studentProfile.year,
 				semester: updates.studentProfile?.semester ?? studentProfile.semester,
 				division: normalizeString(updates.studentProfile?.division) || studentProfile.division,
 				rollNo: normalizeString(updates.studentProfile?.rollNo) || studentProfile.rollNo,

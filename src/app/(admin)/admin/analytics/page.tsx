@@ -6,7 +6,7 @@ export default function AdminAnalyticsPage() {
 	return (
 		<InstitutionAnalyticsDashboard
 			title="Institution health"
-			description="Visual analytics, category pie chart, and student progress for all institution submissions."
+			description="Visual analytics and category breakdowns for all institution submissions."
 			roleLabel="Administrator access: all students in your college"
 		/>
 	)

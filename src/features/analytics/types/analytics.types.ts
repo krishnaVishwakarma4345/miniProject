@@ -49,12 +49,36 @@ export interface StudentSubmissionDatum {
 	activityDate: number
 	createdAt: number
 	pointsAwarded: number
+	year?: number
+	semester?: number
+	division?: string
+	branch?: string
+}
+
+export interface StudentProgressProfile {
+	studentId?: string
+	academicYear?: number
+	year?: number
+	semester?: number
+	division?: string
+	branch?: string
+	rollNo?: string
+	department?: string
+	cgpa?: number
+	semesterCgpa?: Array<{
+		semester: number
+		cgpa: number
+	}>
+	profileCompletion?: number
 }
 
 export interface StudentProgressDatum {
 	studentId: string
 	name: string
+	email?: string
 	department?: string
+	studentProfile?: StudentProgressProfile
+	approvedActivities: number
 	totalSubmissions: number
 	totalCredits: number
 	submissions: StudentSubmissionDatum[]

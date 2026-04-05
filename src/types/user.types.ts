@@ -54,6 +54,9 @@ export interface StudentProfile {
   /** Academic year (1, 2, 3, 4) */
   year: number;
 
+  /** Academic year alias used by analytics filters (1, 2, 3, 4) */
+  academicYear?: number;
+
   /** Academic semester (1 through 8) */
   semester: number;
 
