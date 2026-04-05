@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { CATEGORY_LABELS } from "@/constants/activityCategories"
+import { ACADEMIC_YEAR_OPTIONS, BRANCH_OPTIONS, DIVISION_OPTIONS, SEMESTER_OPTIONS } from "@/constants/filterOptions"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
@@ -50,26 +51,6 @@ export function StudentProgressSection({ students }: StudentProgressSectionProps
 	const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
 	const [page, setPage] = useState(1)
 	const [activeStudent, setActiveStudent] = useState<StudentProgressDatum | null>(null)
-
-	const availableYears = useMemo(
-		() => Array.from(new Set(students.map((student) => student.studentProfile?.academicYear ?? student.studentProfile?.year).filter((value): value is number => typeof value === "number"))).sort((a, b) => a - b),
-		[students]
-	)
-
-	const availableSemesters = useMemo(
-		() => Array.from(new Set(students.map((student) => student.studentProfile?.semester).filter((value): value is number => typeof value === "number"))).sort((a, b) => a - b),
-		[students]
-	)
-
-	const availableDivisions = useMemo(
-		() => Array.from(new Set(students.map((student) => student.studentProfile?.division?.trim()).filter((value): value is string => Boolean(value)))).sort((a, b) => a.localeCompare(b)),
-		[students]
-	)
-
-	const availableBranches = useMemo(
-		() => Array.from(new Set(students.map((student) => student.studentProfile?.branch?.trim()).filter((value): value is string => Boolean(value)))).sort((a, b) => a.localeCompare(b)),
-		[students]
-	)
 
 	const filteredStudents = useMemo(() => {
 		const normalizedSearch = search.trim().toLowerCase()
@@ -167,7 +148,7 @@ export function StudentProgressSection({ students }: StudentProgressSectionProps
 							onChange={(event) => setYearFilter(event.target.value)}
 							options={[
 								{ label: "All academic years", value: ALL_VALUE },
-								...availableYears.map((year) => ({ label: `Year ${year}`, value: String(year) })),
+								...ACADEMIC_YEAR_OPTIONS.map((year) => ({ label: `Year ${year}`, value: String(year) })),
 							]}
 						/>
 						<Select
@@ -175,7 +156,7 @@ export function StudentProgressSection({ students }: StudentProgressSectionProps
 							onChange={(event) => setSemesterFilter(event.target.value)}
 							options={[
 								{ label: "All semesters", value: ALL_VALUE },
-								...availableSemesters.map((semester) => ({ label: `Sem ${semester}`, value: String(semester) })),
+								...SEMESTER_OPTIONS.map((semester) => ({ label: `Sem ${semester}`, value: String(semester) })),
 							]}
 						/>
 						<Select
@@ -183,7 +164,7 @@ export function StudentProgressSection({ students }: StudentProgressSectionProps
 							onChange={(event) => setDivisionFilter(event.target.value)}
 							options={[
 								{ label: "All divisions", value: ALL_VALUE },
-								...availableDivisions.map((division) => ({ label: `Div ${division}`, value: division })),
+								...DIVISION_OPTIONS.map((division) => ({ label: `Div ${division}`, value: division })),
 							]}
 						/>
 						<Select
@@ -191,7 +172,7 @@ export function StudentProgressSection({ students }: StudentProgressSectionProps
 							onChange={(event) => setBranchFilter(event.target.value)}
 							options={[
 								{ label: "All branches", value: ALL_VALUE },
-								...availableBranches.map((branch) => ({ label: branch, value: branch })),
+								...BRANCH_OPTIONS.map((branch) => ({ label: branch, value: branch })),
 							]}
 						/>
 						<Select

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, Button, Input, Select, Spinner, Textarea } from '@/components/ui'
 import { CATEGORY_LABELS } from '@/constants/activityCategories'
+import { BRANCH_OPTIONS, DIVISION_OPTIONS } from '@/constants/filterOptions'
 import { ActivityCategory, User, UserRole } from '@/types'
 import { useAuthStore } from '@/store/auth.store'
 import { useUIStore } from '@/store/ui.store'
@@ -101,6 +102,16 @@ const SEMESTER_OPTIONS = [
 	{ label: 'Semester 7', value: '7' },
 	{ label: 'Semester 8', value: '8' },
 ]
+
+const DIVISION_OPTIONS_SELECT = DIVISION_OPTIONS.map((div) => ({
+	value: div,
+	label: `Division ${div}`,
+}))
+
+const BRANCH_OPTIONS_SELECT = BRANCH_OPTIONS.map((branch) => ({
+	value: branch,
+	label: branch,
+}))
 
 const emptyFormState: FormState = {
 	fullName: '',
@@ -559,9 +570,9 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 							<Input label='Student ID' value={form.studentId} onChange={(event) => handleChange('studentId', event.target.value)} required />
 									<Select label='Academic year' value={form.year} onChange={(event) => handleChange('year', event.target.value)} options={YEAR_OPTIONS} placeholder='Select academic year' required />
 							<Select label='Semester' value={form.semester} onChange={(event) => handleChange('semester', event.target.value)} options={SEMESTER_OPTIONS} placeholder='Select semester' required />
-							<Input label='Division' value={form.division} onChange={(event) => handleChange('division', event.target.value)} required />
+							<Select label='Division' value={form.division} onChange={(event) => handleChange('division', event.target.value)} options={DIVISION_OPTIONS_SELECT} placeholder='Select division' required />
 							<Input label='Roll number' value={form.rollNo} onChange={(event) => handleChange('rollNo', event.target.value)} required />
-							<Input label='Branch' value={form.branch} onChange={(event) => handleChange('branch', event.target.value)} required />
+							<Select label='Branch' value={form.branch} onChange={(event) => handleChange('branch', event.target.value)} options={BRANCH_OPTIONS_SELECT} placeholder='Select branch' required />
 							<Textarea label='Skills' value={form.skills} onChange={(event) => handleChange('skills', event.target.value)} rows={3} containerClassName='sm:col-span-2' placeholder='Comma-separated skills, for example: React, Python, Leadership' hint='Use commas to separate multiple skills.' />
 						</>
 					) : (

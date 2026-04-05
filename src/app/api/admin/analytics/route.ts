@@ -6,6 +6,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { AnalyticsOverview, AnalyticsRange, StudentProgressDatum } from '@/features/analytics/types/analytics.types'
 import { ensureInstitutionActivityMirror, getInstitutionActivitiesCollection } from '@/lib/firebase/firestore/activity-tenant.utils'
+import { BRANCH_OPTIONS } from '@/constants/filterOptions'
 
 interface UserProfile {
 	uid?: string
@@ -86,6 +87,21 @@ const getRangeDays = (range: AnalyticsRange): number => {
 	if (range === '7d') return 7
 	if (range === '90d') return 90
 	return 30
+}
+
+const normalizeBreakdownLabel = (value?: string) => {
+	const trimmed = value?.trim()
+	if (!trimmed) return 'General'
+
+	const matchedBranch = BRANCH_OPTIONS.find((branch) => branch.toLowerCase() === trimmed.toLowerCase())
+	if (matchedBranch) return matchedBranch
+
+	return trimmed
+		.toLowerCase()
+		.split(/[\s_-]+/)
+		.filter(Boolean)
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
 }
 
 export async function GET(request: NextRequest) {
@@ -174,7 +190,7 @@ export async function GET(request: NextRequest) {
 					division: user.studentProfile?.division,
 					branch: user.studentProfile?.branch,
 					rollNo: user.studentProfile?.rollNo,
-					department: user.studentProfile?.department || 'General',
+					department: normalizeBreakdownLabel(user.studentProfile?.branch || user.studentProfile?.department),
 					cgpa: user.studentProfile?.cgpa,
 					semesterCgpa,
 					profileCompletion: user.profileCompletion,
