@@ -176,6 +176,11 @@ export interface ActivityComment {
   attachmentUrl?: string;
 }
 
+export interface ActivitySemesterCgpaEntry {
+  semester: number;
+  cgpa: number;
+}
+
 /**
  * Core Activity document in Firestore
  *
@@ -203,6 +208,9 @@ export interface Activity {
 
   /** Student's branch captured at submission time */
   branch: string;
+
+  /** Student semester-wise CGPA visible to faculty */
+  studentSemesterCgpa?: ActivitySemesterCgpaEntry[];
 
   /** Institution tenant ID for isolation/multi-campus support */
   institutionId?: string;

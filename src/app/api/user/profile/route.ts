@@ -255,6 +255,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 				rollNo: normalizeString(updates.studentProfile?.rollNo) || studentProfile.rollNo,
 				branch: normalizeString(updates.studentProfile?.branch) || studentProfile.branch,
 				cgpa: updates.studentProfile?.cgpa ?? studentProfile.cgpa,
+				semesterCgpa: updates.studentProfile?.semesterCgpa ?? studentProfile.semesterCgpa,
 				bio: normalizeString(updates.bio) || normalizeString(updates.studentProfile?.bio) || studentProfile.bio,
 				skills: updates.studentProfile?.skills ?? studentProfile.skills,
 				interests: updates.studentProfile?.interests ?? studentProfile.interests,

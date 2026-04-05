@@ -14,6 +14,18 @@
 import { z } from "zod";
 import { ActivityCategory, UserRole, UserStatus } from "@/types";
 
+const semesterCgpaEntrySchema = z.object({
+  semester: z
+    .number()
+    .int()
+    .min(1, "Semester must be between 1 and 8")
+    .max(8, "Semester must be between 1 and 8"),
+  cgpa: z
+    .number()
+    .min(0, "CGPA cannot be negative")
+    .max(10, "CGPA cannot exceed 10"),
+});
+
 /**
  * Student profile validation
  * Used by student profile setup and updates
@@ -65,6 +77,14 @@ export const studentProfileSchema = z.object({
     .min(0, "CGPA cannot be negative")
     .max(10, "CGPA cannot exceed 10")
     .default(0),
+
+  semesterCgpa: z
+    .array(semesterCgpaEntrySchema)
+    .max(8, "Maximum 8 semesters allowed")
+    .refine((entries) => new Set(entries.map((entry) => entry.semester)).size === entries.length, {
+      message: "Each semester can have only one CGPA value",
+    })
+    .optional(),
 
   bio: z
     .string()

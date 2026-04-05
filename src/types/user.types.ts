@@ -35,6 +35,11 @@ export enum UserStatus {
   PENDING_VERIFICATION = "pending_verification",
 }
 
+export interface SemesterCgpaEntry {
+  semester: number;
+  cgpa: number;
+}
+
 /**
  * Student-specific activity fields
  * Tracks participation in co-curricular activities
@@ -63,6 +68,9 @@ export interface StudentProfile {
 
   /** CGPA (0.0 to 10.0) */
   cgpa: number;
+
+  /** Semester-wise CGPA values (Sem 1 to Sem 8) */
+  semesterCgpa?: SemesterCgpaEntry[];
 
   /** Total activities submitted */
   totalActivities: number;

@@ -1,18 +1,42 @@
 "use client"
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActivityStatus } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import useActivities from '@/features/activities/hooks/useActivities'
 import ActivityList from '@/features/activities/components/ActivityList'
 import { StatCard } from '@/components/data-display/StatCard'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { ScrollReveal } from '@/features/landing/components/ScrollReveal'
+import { useUIStore } from '@/store/ui.store'
+
+type SemesterCgpaEntry = {
+	semester: number
+	cgpa: number
+}
+
+const SEMESTER_SEQUENCE = [1, 2, 3, 4, 5, 6, 7, 8]
+
+const buildInitialCgpaForm = (entries?: SemesterCgpaEntry[]) => {
+	const entryMap = new Map((entries || []).map((entry) => [entry.semester, entry.cgpa]))
+	return Object.fromEntries(
+		SEMESTER_SEQUENCE.map((semester) => [String(semester), entryMap.has(semester) ? String(entryMap.get(semester)) : ''])
+	) as Record<string, string>
+}
 
 export default function StudentDashboardPage() {
 	const { user } = useAuth()
+	const addToast = useUIStore((state) => state.addToast)
 	const { activities, isLoading, error, refresh } = useActivities(user?.id)
+	const [cgpaForm, setCgpaForm] = useState<Record<string, string>>(buildInitialCgpaForm(user?.studentProfile?.semesterCgpa as SemesterCgpaEntry[] | undefined))
+	const [isSavingCgpa, setIsSavingCgpa] = useState(false)
+	const [cgpaError, setCgpaError] = useState('')
+
+	useEffect(() => {
+		setCgpaForm(buildInitialCgpaForm(user?.studentProfile?.semesterCgpa as SemesterCgpaEntry[] | undefined))
+	}, [user?.studentProfile?.semesterCgpa])
 
 	const stats = useMemo(() => {
 		const total = activities.length
@@ -39,6 +63,63 @@ export default function StudentDashboardPage() {
 			{ label: 'Total credits earned', value: earnedCredits, suffix: ' pts' },
 		]
 	}, [activities])
+
+	const handleCgpaChange = (semester: number, value: string) => {
+		setCgpaForm((current) => ({ ...current, [String(semester)]: value }))
+		if (cgpaError) {
+			setCgpaError('')
+		}
+	}
+
+	const handleSaveCgpa = async () => {
+		setCgpaError('')
+		const parsedEntries: SemesterCgpaEntry[] = []
+
+		for (const semester of SEMESTER_SEQUENCE) {
+			const raw = (cgpaForm[String(semester)] || '').trim()
+			if (!raw) {
+				continue
+			}
+
+			const cgpa = Number(raw)
+			if (!Number.isFinite(cgpa) || cgpa < 0 || cgpa > 10) {
+				setCgpaError(`Sem ${semester} CGPA must be between 0 and 10.`)
+				return
+			}
+
+			parsedEntries.push({ semester, cgpa: Number(cgpa.toFixed(2)) })
+		}
+
+		setIsSavingCgpa(true)
+		try {
+			const response = await fetch('/api/user/profile', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({
+					studentProfile: {
+						semesterCgpa: parsedEntries,
+					},
+				}),
+			})
+
+			const payload = (await response.json().catch(() => null)) as { success?: boolean; error?: string; message?: string } | null
+			if (!response.ok || !payload?.success) {
+				throw new Error(payload?.error || payload?.message || 'Failed to save semester CGPA')
+			}
+
+			addToast({
+				type: 'success',
+				title: 'Semester CGPA updated',
+				message: 'Your semester-wise CGPA is now visible to faculty.',
+				duration: 3000,
+			})
+		} catch (saveError) {
+			setCgpaError(saveError instanceof Error ? saveError.message : 'Failed to save semester CGPA')
+		} finally {
+			setIsSavingCgpa(false)
+		}
+	}
 
 	return (
 		<div className='space-y-6'>
@@ -71,6 +152,34 @@ export default function StudentDashboardPage() {
 						<StatCard key={stat.label} label={stat.label} value={stat.value} />
 					))}
 				</section>
+			</ScrollReveal>
+
+			<ScrollReveal from='left'>
+			<section className='rounded-4xl border border-slate-200 bg-white/95 p-6 shadow-sm'>
+				<div className='flex flex-wrap items-center justify-between gap-3'>
+					<div>
+						<h3 className='text-lg font-semibold text-slate-900'>Semester-wise CGPA</h3>
+						<p className='text-sm text-slate-600'>Add CGPA for each semester. Faculty can view this in review details.</p>
+					</div>
+					<Button variant='outline' onClick={handleSaveCgpa} loading={isSavingCgpa}>Save CGPA</Button>
+				</div>
+				<div className='mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+					{SEMESTER_SEQUENCE.map((semester) => (
+						<Input
+							key={semester}
+							label={`Sem ${semester} CGPA`}
+							type='number'
+							min={0}
+							max={10}
+							step='0.01'
+							placeholder='0.00'
+							value={cgpaForm[String(semester)] || ''}
+							onChange={(event) => handleCgpaChange(semester, event.target.value)}
+						/>
+					))}
+				</div>
+				{cgpaError ? <p className='mt-3 text-sm text-rose-600'>{cgpaError}</p> : null}
+			</section>
 			</ScrollReveal>
 
 			<ScrollReveal from='left'>

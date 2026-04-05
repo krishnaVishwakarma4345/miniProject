@@ -14,6 +14,12 @@ interface UserProfile {
   facultyProfile?: { reviewCategories?: string[] }
 }
 
+interface StudentProfileRecord {
+  studentProfile?: {
+    semesterCgpa?: Array<{ semester?: number; cgpa?: number }>
+  }
+}
+
 const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<UserProfile | null> => {
   const userDoc = await adminDb.collection('users').doc(uid).get()
   if (userDoc.exists) {
@@ -31,6 +37,24 @@ const resolveUserProfile = async (uid: string, adminDb: FirebaseFirestore.Firest
   }
 
   return scoped.docs[0].data() as UserProfile
+}
+
+const resolveStudentProfile = async (uid: string, adminDb: FirebaseFirestore.Firestore): Promise<StudentProfileRecord | null> => {
+  const globalDoc = await adminDb.collection('users').doc(uid).get()
+  if (globalDoc.exists) {
+    return globalDoc.data() as StudentProfileRecord
+  }
+
+  try {
+    const scoped = await adminDb.collectionGroup('users').where('uid', '==', uid).limit(1).get()
+    if (!scoped.empty) {
+      return scoped.docs[0].data() as StudentProfileRecord
+    }
+  } catch {
+    // Ignore collection group issues and continue without student profile enrichment.
+  }
+
+  return null
 }
 
 export async function GET(request: NextRequest) {
@@ -77,9 +101,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
     }
 
+    const studentProfileRecord = await resolveStudentProfile(activity.studentId, adminDb)
+    const studentSemesterCgpa = (studentProfileRecord?.studentProfile?.semesterCgpa || [])
+      .filter((entry) => typeof entry.semester === 'number' && typeof entry.cgpa === 'number')
+      .map((entry) => ({ semester: entry.semester as number, cgpa: entry.cgpa as number }))
+      .sort((a, b) => a.semester - b.semester)
+
+    const responseActivity: Activity = {
+      ...activity,
+      studentSemesterCgpa,
+    }
+
     return NextResponse.json<ApiResponse<Activity>>({
       success: true,
-      data: activity,
+      data: responseActivity,
       message: 'Activity fetched',
       timestamp: Date.now(),
       statusCode: 200,

@@ -33,6 +33,7 @@ export function ReviewDetailClient({ activity }: ReviewDetailClientProps) {
   const [currentActivity, setCurrentActivity] = useState(activity)
 
   const proofFiles = currentActivity.proofFiles ?? []
+  const semesterCgpa = currentActivity.studentSemesterCgpa ?? []
 
   return (
     <PageContainer>
@@ -130,6 +131,22 @@ export function ReviewDetailClient({ activity }: ReviewDetailClientProps) {
                 </div>
               ) : null}
             </dl>
+
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold text-slate-900">Semester-wise CGPA</h4>
+              {semesterCgpa.length ? (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {semesterCgpa.map((entry) => (
+                    <div key={entry.semester} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Sem {entry.semester}</p>
+                      <p className="text-sm font-semibold text-slate-900">{entry.cgpa.toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">No semester CGPA shared by the student yet.</p>
+              )}
+            </div>
           </article>
           <ReviewHistory activity={currentActivity} />
         </aside>
