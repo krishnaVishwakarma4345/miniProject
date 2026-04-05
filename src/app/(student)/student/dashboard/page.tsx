@@ -18,19 +18,32 @@ export default function StudentDashboardPage() {
 		const total = activities.length
 		const approved = activities.filter((activity) => activity.status === ActivityStatus.APPROVED).length
 		const underReview = activities.filter((activity) => activity.status === ActivityStatus.UNDER_REVIEW).length
-		const revisions = activities.filter((activity) => activity.status === ActivityStatus.REVISION_REQUESTED).length
+		const earnedCredits = activities.reduce((sum, activity) => {
+			if (activity.status !== ActivityStatus.APPROVED) {
+				return sum
+			}
+
+			const points =
+				typeof activity.pointsAwarded === 'number'
+					? activity.pointsAwarded
+					: typeof activity.review?.pointsAwarded === 'number'
+						? activity.review.pointsAwarded
+						: 0
+
+			return sum + points
+		}, 0)
 		return [
 			{ label: 'Total submissions', value: total },
 			{ label: 'Approved wins', value: approved },
 			{ label: 'Under review', value: underReview },
-			{ label: 'Needs revision', value: revisions },
+			{ label: 'Total credits earned', value: earnedCredits, suffix: ' pts' },
 		]
 	}, [activities])
 
 	return (
 		<div className='space-y-6'>
 			<ScrollReveal from='left'>
-				<section className='rounded-[32px] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm'>
+				<section className='rounded-4xl border border-slate-200 bg-linear-to-br from-white to-slate-50 p-8 shadow-sm'>
 				<div className='flex flex-wrap items-center justify-between gap-4'>
 					<div>
 						<p className='text-xs uppercase tracking-[0.4em] text-slate-400'>Welcome back</p>
