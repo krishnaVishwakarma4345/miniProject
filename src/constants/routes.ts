@@ -95,6 +95,7 @@ export const ADMIN_ROUTES = {
  */
 export const MASTER_ADMIN_ROUTES = {
   INSTITUTIONS: "/master-admin/institutions",
+  USERS: "/master-admin/users",
 } as const;
 
 /**

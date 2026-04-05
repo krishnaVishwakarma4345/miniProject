@@ -11,10 +11,12 @@ export interface UserTableProps {
 	selectedIds: string[]
 	isLoading?: boolean
 	onSelect: (userId: string) => void
-	onEdit: (userId: string) => void
+	onEdit?: (userId: string) => void
+	onAction?: (userId: string) => void
+	actionLabel?: string
 }
 
-function UserCard({ user, isSelected, onSelect, onEdit }: { user: AdminUserSummary; isSelected: boolean; onSelect: (userId: string) => void; onEdit: (userId: string) => void }) {
+function UserCard({ user, isSelected, onSelect, onEdit, onAction, actionLabel }: { user: AdminUserSummary; isSelected: boolean; onSelect: (userId: string) => void; onEdit?: (userId: string) => void; onAction?: (userId: string) => void; actionLabel?: string }) {
 	return (
 		<div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
 			<div className="flex items-start gap-3">
@@ -40,18 +42,32 @@ function UserCard({ user, isSelected, onSelect, onEdit }: { user: AdminUserSumma
 							<p className="mt-1">{user.lastActive ? new Date(user.lastActive).toLocaleDateString() : '—'}</p>
 						</div>
 					</div>
-					<div className="flex justify-end">
-						<Button size="sm" variant="outline" disabled={user.role === 'master_admin'} onClick={() => onEdit(user.id)}>
-							Edit
-						</Button>
-					</div>
+					{onAction || onEdit ? (
+						<div className="flex justify-end">
+							<Button
+								size="sm"
+								variant="outline"
+								disabled={user.role === 'master_admin'}
+								onClick={() => {
+									if (onAction) {
+										onAction(user.id)
+										return
+									}
+
+									onEdit?.(user.id)
+								}}
+							>
+								{actionLabel || 'Edit'}
+							</Button>
+						</div>
+					) : null}
 				</div>
 			</div>
 		</div>
 	)
 }
 
-export function UserTable({ users, selectedIds, isLoading = false, onSelect, onEdit }: UserTableProps) {
+export function UserTable({ users, selectedIds, isLoading = false, onSelect, onEdit, onAction, actionLabel }: UserTableProps) {
 	if (isLoading) {
 		return (
 			<div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
@@ -73,7 +89,7 @@ export function UserTable({ users, selectedIds, isLoading = false, onSelect, onE
 			<div className="grid gap-4 md:hidden">
 				{users.map((user) => {
 					const isSelected = selectedIds.includes(user.id)
-					return <UserCard key={user.id} user={user} isSelected={isSelected} onSelect={onSelect} onEdit={onEdit} />
+					return <UserCard key={user.id} user={user} isSelected={isSelected} onSelect={onSelect} onEdit={onEdit} onAction={onAction} actionLabel={actionLabel} />
 				})}
 			</div>
 
@@ -117,9 +133,23 @@ export function UserTable({ users, selectedIds, isLoading = false, onSelect, onE
 											{user.lastActive ? new Date(user.lastActive).toLocaleDateString() : '—'}
 										</td>
 										<td className="px-4 py-3 text-right">
-											<Button size="sm" variant="outline" disabled={user.role === 'master_admin'} onClick={() => onEdit(user.id)}>
-												Edit
-											</Button>
+											{onAction || onEdit ? (
+												<Button
+													size="sm"
+													variant="outline"
+													disabled={user.role === 'master_admin'}
+													onClick={() => {
+														if (onAction) {
+															onAction(user.id)
+															return
+														}
+
+														onEdit?.(user.id)
+													}}
+												>
+													{actionLabel || 'Edit'}
+												</Button>
+											) : null}
 										</td>
 									</tr>
 								</Fragment>

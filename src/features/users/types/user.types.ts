@@ -5,6 +5,7 @@ export interface AdminUserFilters {
 	role: UserRole | "all"
 	status: UserStatus | "all"
 	department: string | "all"
+	institutionId?: string
 	search: string
 }
 
@@ -14,6 +15,7 @@ export interface AdminUserSummary {
 	email: string
 	role: UserRole
 	status: UserStatus
+	institutionId?: string
 	department?: string
 	reviewCategories?: ActivityCategory[]
 	lastActive?: number
@@ -24,6 +26,7 @@ export interface UpdateUserPayload {
 	userId: string
 	role?: UserRole
 	status?: UserStatus
+	institutionId?: string
 	department?: string
 	reviewCategories?: ActivityCategory[]
 }

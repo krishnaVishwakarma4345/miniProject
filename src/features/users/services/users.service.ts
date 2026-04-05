@@ -16,6 +16,7 @@ const ensureSuccess = async <T>(response: Response): Promise<T> => {
 
 const buildQuery = (filters?: Partial<AdminUserFilters>) => {
 	const params = new URLSearchParams()
+	if (filters?.institutionId) params.set("institutionId", filters.institutionId)
 	if (filters?.role && filters.role !== "all") params.set("role", filters.role)
 	if (filters?.status && filters.status !== "all") params.set("status", filters.status)
 	if (filters?.department && filters.department !== "all") params.set("department", filters.department)
@@ -43,12 +44,12 @@ export const usersService = {
 		return ensureSuccess<AdminUserSummary>(response)
 	},
 
-	async bulkUpdateRole(userIds: string[], role: UserRole): Promise<AdminUserSummary[]> {
+	async bulkUpdateRole(userIds: string[], role: UserRole, institutionId?: string): Promise<AdminUserSummary[]> {
 		const response = await fetch("/api/admin/users", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			credentials: "include",
-			body: JSON.stringify({ action: "bulkRoleUpdate", userIds, role }),
+			body: JSON.stringify({ action: "bulkRoleUpdate", userIds, role, institutionId }),
 		})
 		return ensureSuccess<AdminUserSummary[]>(response)
 	},

@@ -20,10 +20,16 @@ interface UserProfile {
 	adminProfile?: { department?: string }
 }
 
+interface ManagerProfile extends UserProfile {
+	uid: string
+	role: UserRole
+}
+
 interface UpdateUserBody {
 	userId?: string
 	role?: UserRole
 	status?: UserStatus
+	institutionId?: string
 	department?: string
 	reviewCategories?: ActivityCategory[]
 }
@@ -32,6 +38,7 @@ interface BulkRoleBody {
 	action?: 'bulkRoleUpdate'
 	userIds?: string[]
 	role?: UserRole
+	institutionId?: string
 }
 
 const extractInstitutionFromPath = (path: string): string | undefined => {
@@ -109,6 +116,7 @@ const mapUserSummary = (uid: string, user: UserProfile): AdminUserSummary => ({
 	reviewCategories: user.facultyProfile?.reviewCategories,
 	lastActive: user.lastLoginAt,
 	totalActivities: user.studentProfile?.totalActivities,
+	institutionId: user.institutionId,
 })
 
 const normalizeCategories = (value: unknown): ActivityCategory[] | undefined => {
@@ -134,19 +142,61 @@ const getAuthorizedAdminProfile = async (request: NextRequest, adminDb: Firebase
 	const resolvedAdminProfile = adminProfile ? { ...adminProfile, institutionId: adminProfile.institutionId || claimInstitutionId } : null
 	const role = adminProfile?.role || (decoded.role as UserRole | undefined) || (decoded.custom_claims?.role as UserRole | undefined) || UserRole.STUDENT
 
-	if (role !== UserRole.ADMIN) {
+	if (role !== UserRole.ADMIN && role !== UserRole.MASTER_ADMIN) {
 		return { error: NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Forbidden', timestamp: Date.now(), statusCode: 403 }, { status: 403 }) }
 	}
 
-	if (!resolvedAdminProfile?.institutionId) {
+	if (role === UserRole.ADMIN && !resolvedAdminProfile?.institutionId) {
 		return { error: NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for admin', timestamp: Date.now(), statusCode: 403 }, { status: 403 }) }
 	}
 
-	if (adminProfile && !adminProfile.institutionId && resolvedAdminProfile.institutionId) {
+	if (role === UserRole.ADMIN && adminProfile && !adminProfile.institutionId && resolvedAdminProfile?.institutionId) {
 		await adminDb.collection('users').doc(decoded.uid).set({ institutionId: resolvedAdminProfile.institutionId, updatedAt: Date.now() }, { merge: true })
 	}
 
-	return { adminProfile: resolvedAdminProfile }
+	return { managerProfile: { ...(resolvedAdminProfile || {}), uid: decoded.uid, role } as ManagerProfile }
+}
+
+const resolveInstitutionScope = (
+	request: NextRequest,
+	managerProfile: ManagerProfile,
+	requestedInstitutionId?: string
+): { institutionId?: string; error?: NextResponse } => {
+	const url = new URL(request.url)
+	const institutionId = requestedInstitutionId?.trim() || url.searchParams.get('institutionId')?.trim() || undefined
+
+	if (managerProfile.role === UserRole.MASTER_ADMIN) {
+		if (!institutionId) {
+			return {
+				error: NextResponse.json<ApiResponse<null>>(
+					{ success: false, data: null, message: 'institutionId is required for master admin requests', timestamp: Date.now(), statusCode: 400 },
+					{ status: 400 }
+				),
+			}
+		}
+
+		return { institutionId }
+	}
+
+	if (!managerProfile.institutionId) {
+		return {
+			error: NextResponse.json<ApiResponse<null>>(
+				{ success: false, data: null, message: 'Institution not found for admin', timestamp: Date.now(), statusCode: 403 },
+				{ status: 403 }
+			),
+		}
+	}
+
+	if (institutionId && institutionId !== managerProfile.institutionId) {
+		return {
+			error: NextResponse.json<ApiResponse<null>>(
+				{ success: false, data: null, message: 'You can only manage users from your institution', timestamp: Date.now(), statusCode: 403 },
+				{ status: 403 }
+			),
+		}
+	}
+
+	return { institutionId: managerProfile.institutionId }
 }
 
 export async function GET(request: NextRequest) {
@@ -157,6 +207,11 @@ export async function GET(request: NextRequest) {
 			return auth.error
 		}
 
+		const scope = resolveInstitutionScope(request, auth.managerProfile)
+		if ('error' in scope) {
+			return scope.error
+		}
+
 		const { searchParams } = new URL(request.url)
 		const roleFilter = searchParams.get('role')
 		const statusFilter = searchParams.get('status')
@@ -164,7 +219,7 @@ export async function GET(request: NextRequest) {
 
 		const usersSnapshot = await adminDb
 			.collection('users')
-			.where('institutionId', '==', auth.adminProfile.institutionId)
+			.where('institutionId', '==', scope.institutionId)
 			.get()
 
 		let users = usersSnapshot.docs
@@ -220,6 +275,11 @@ export async function PATCH(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'userId is required', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
 		}
 
+		const scope = resolveInstitutionScope(request, auth.managerProfile, body.institutionId)
+		if ('error' in scope) {
+			return scope.error
+		}
+
 		const userRef = adminDb.collection('users').doc(body.userId)
 		const userDoc = await userRef.get()
 		if (!userDoc.exists) {
@@ -227,12 +287,17 @@ export async function PATCH(request: NextRequest) {
 		}
 
 		const targetUser = userDoc.data() as UserProfile
-		if (targetUser.institutionId !== auth.adminProfile.institutionId) {
+		if (targetUser.institutionId !== scope.institutionId) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'You can only manage users from your institution', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		if (targetUser.role === UserRole.MASTER_ADMIN) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Cannot modify master admin users', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		const isMasterAdmin = auth.managerProfile.role === UserRole.MASTER_ADMIN
+		if (isMasterAdmin && (body.status !== undefined || body.department !== undefined || body.reviewCategories !== undefined || body.role !== UserRole.ADMIN)) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Master admin can only promote users to admin', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		const updates: Record<string, unknown> = { updatedAt: Date.now() }
@@ -311,8 +376,17 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Invalid bulk role update payload', timestamp: Date.now(), statusCode: 400 }, { status: 400 })
 		}
 
+		const scope = resolveInstitutionScope(request, auth.managerProfile, body.institutionId)
+		if ('error' in scope) {
+			return scope.error
+		}
+
 		if (body.role === UserRole.MASTER_ADMIN) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Cannot assign master admin role from admin panel', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
+		}
+
+		if (auth.managerProfile.role === UserRole.MASTER_ADMIN && body.role !== UserRole.ADMIN) {
+			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Master admin can only promote users to admin', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
 		const now = Date.now()
@@ -325,7 +399,7 @@ export async function POST(request: NextRequest) {
 				if (!userDoc.exists) return
 
 				const user = userDoc.data() as UserProfile
-				if (user.institutionId !== auth.adminProfile.institutionId) return
+				if (user.institutionId !== scope.institutionId) return
 				if (user.role === UserRole.MASTER_ADMIN) return
 
 				const updates = { role: body.role, updatedAt: now }
@@ -344,7 +418,7 @@ export async function POST(request: NextRequest) {
 
 		const usersSnapshot = await adminDb
 			.collection('users')
-			.where('institutionId', '==', auth.adminProfile.institutionId)
+			.where('institutionId', '==', scope.institutionId)
 			.get()
 
 		const users = usersSnapshot.docs

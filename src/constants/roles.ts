@@ -93,6 +93,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     "institution:create",
     "institution:read",
     "institution:delete",
+    "user:read",
+    "user:change-role",
   ],
 } as const;
 
@@ -135,6 +137,8 @@ export const ROLE_FEATURES: Record<UserRole, string[]> = {
   [UserRole.MASTER_ADMIN]: [
     "institution_management",
     "institution_registry",
+    "user_management",
+    "role_management",
   ],
 } as const;
 

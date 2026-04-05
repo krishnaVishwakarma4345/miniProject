@@ -9,6 +9,7 @@ import { UserRole } from "@/types/user.types"
 
 const NAV_LINKS = [
   { href: "/master-admin/institutions", label: "Institutions" },
+  { href: "/master-admin/users", label: "Users" },
 ]
 
 export default function MasterAdminLayout({ children }: { children: ReactNode }) {
