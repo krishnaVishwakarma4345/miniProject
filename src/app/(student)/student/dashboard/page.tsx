@@ -17,6 +17,17 @@ type SemesterCgpaEntry = {
 	cgpa: number
 }
 
+type ProfilePayload = {
+	success?: boolean
+	profile?: {
+		studentProfile?: {
+			semesterCgpa?: SemesterCgpaEntry[]
+		}
+	}
+	error?: string
+	message?: string
+}
+
 const SEMESTER_SEQUENCE = [1, 2, 3, 4, 5, 6, 7, 8]
 
 const buildInitialCgpaForm = (entries?: SemesterCgpaEntry[]) => {
@@ -37,6 +48,42 @@ export default function StudentDashboardPage() {
 	useEffect(() => {
 		setCgpaForm(buildInitialCgpaForm(user?.studentProfile?.semesterCgpa as SemesterCgpaEntry[] | undefined))
 	}, [user?.studentProfile?.semesterCgpa])
+
+	useEffect(() => {
+		if (!user?.id) {
+			return
+		}
+
+		let isMounted = true
+
+		const loadSemesterCgpa = async () => {
+			try {
+				const response = await fetch('/api/user/profile', {
+					credentials: 'include',
+					cache: 'no-store',
+				})
+
+				if (!response.ok) {
+					return
+				}
+
+				const payload = (await response.json()) as ProfilePayload
+				const semesterCgpa = payload.profile?.studentProfile?.semesterCgpa
+
+				if (isMounted) {
+					setCgpaForm(buildInitialCgpaForm(semesterCgpa))
+				}
+			} catch {
+				// Keep current values if profile hydration fails.
+			}
+		}
+
+		void loadSemesterCgpa()
+
+		return () => {
+			isMounted = false
+		}
+	}, [user?.id])
 
 	const stats = useMemo(() => {
 		const total = activities.length
@@ -103,10 +150,12 @@ export default function StudentDashboardPage() {
 				}),
 			})
 
-			const payload = (await response.json().catch(() => null)) as { success?: boolean; error?: string; message?: string } | null
+			const payload = (await response.json().catch(() => null)) as ProfilePayload | null
 			if (!response.ok || !payload?.success) {
 				throw new Error(payload?.error || payload?.message || 'Failed to save semester CGPA')
 			}
+
+			setCgpaForm(buildInitialCgpaForm(payload.profile?.studentProfile?.semesterCgpa || parsedEntries))
 
 			addToast({
 				type: 'success',
