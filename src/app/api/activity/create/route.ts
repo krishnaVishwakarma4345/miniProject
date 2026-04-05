@@ -5,6 +5,15 @@ import { verifySessionCookie } from '@/lib/firebase/auth/verifySessionCookie'
 import { getAdminFirestore } from '@/lib/firebase/admin'
 import { mirrorActivityDocument } from '@/lib/firebase/firestore/activity-tenant.utils'
 import { findCategoryFacultyReviewer } from '@/lib/review/facultyCategoryAccess'
+import { activityCreateSchema } from '@/schemas/activity.schema'
+import { StudentProfile } from '@/types/user.types'
+
+type UserRecord = {
+	institutionId?: string
+	displayName?: string
+	fullName?: string
+	studentProfile?: Partial<StudentProfile>
+}
 
 export async function POST(request: NextRequest) {
 	try {
@@ -18,7 +27,7 @@ export async function POST(request: NextRequest) {
 
 		const adminDb = getAdminFirestore()
 		const userSnapshot = await adminDb.collection('users').doc(decoded.uid).get()
-		let userRecord = userSnapshot.exists ? (userSnapshot.data() as { institutionId?: string; displayName?: string; fullName?: string }) : null
+		let userRecord = userSnapshot.exists ? (userSnapshot.data() as UserRecord) : null
 		let institutionId = userRecord?.institutionId
 
 		if (!institutionId) {
@@ -29,7 +38,7 @@ export async function POST(request: NextRequest) {
 				.get()
 
 			if (!scopedUserSnapshot.empty) {
-				const scopedData = scopedUserSnapshot.docs[0].data() as { institutionId?: string; displayName?: string; fullName?: string }
+				const scopedData = scopedUserSnapshot.docs[0].data() as UserRecord
 				institutionId = scopedData.institutionId
 				userRecord = {
 					...scopedData,
@@ -42,6 +51,49 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json<ApiResponse<null>>({ success: false, data: null, message: 'Institution not found for user', timestamp: Date.now(), statusCode: 403 }, { status: 403 })
 		}
 
+		const studentProfile = userRecord?.studentProfile as
+			| {
+				studentId?: string
+				year?: number
+				semester?: number
+				division?: string
+				rollNo?: string
+				branch?: string
+			}
+			| undefined
+
+		if (!studentProfile?.studentId || !studentProfile?.year || !studentProfile?.semester || !studentProfile?.division || !studentProfile?.rollNo || !studentProfile?.branch) {
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				data: null,
+				message: 'Complete your student profile with year, semester, division, student ID, roll number, and branch before submitting an activity',
+				timestamp: Date.now(),
+				statusCode: 400,
+			}, { status: 400 })
+		}
+
+		const submissionPayload = {
+			...body,
+			studentId: studentProfile.studentId,
+			year: studentProfile.year,
+			semester: studentProfile.semester,
+			division: studentProfile.division,
+			rollNo: studentProfile.rollNo,
+			branch: studentProfile.branch,
+		}
+
+		const validation = activityCreateSchema.safeParse(submissionPayload)
+		if (!validation.success) {
+			const firstIssue = validation.error.issues[0]
+			return NextResponse.json<ApiResponse<null>>({
+				success: false,
+				data: null,
+				message: firstIssue?.message || 'Invalid activity payload',
+				timestamp: Date.now(),
+				statusCode: 400,
+			}, { status: 400 })
+		}
+
 		const submitterName =
 			userRecord?.displayName ??
 			userRecord?.fullName ??
@@ -49,8 +101,8 @@ export async function POST(request: NextRequest) {
 			'Student'
 
 		const now = Date.now()
-		const categoryReviewer = await findCategoryFacultyReviewer(adminDb, institutionId, body.category as ActivityCategory)
-		const normalizedProofFiles = (body.proofFiles || []).map((file, index) => ({
+		const categoryReviewer = await findCategoryFacultyReviewer(adminDb, institutionId, validation.data.category as ActivityCategory)
+		const normalizedProofFiles = (validation.data.proofFiles || []).map((file, index) => ({
 			...file,
 			order: file.order ?? index,
 			uploadedAt: file.uploadedAt ?? now,
@@ -59,21 +111,26 @@ export async function POST(request: NextRequest) {
 		const document: Omit<Activity, 'id'> = {
 			institutionId,
 			studentId: decoded.uid,
+			year: validation.data.year,
+			semester: validation.data.semester,
+			division: validation.data.division,
+			rollNo: validation.data.rollNo,
+			branch: validation.data.branch,
 			submittedBy: decoded.uid,
 			submittedByName: submitterName,
-			title: body.title,
-			description: body.description,
-			category: body.category as ActivityCategory,
-			type: body.type as ActivityType,
-			activityDate: body.activityDate,
-			location: body.location,
-			organization: body.organization,
-			durationHours: body.durationHours,
-			certificatesAwards: body.certificatesAwards,
+			title: validation.data.title,
+			description: validation.data.description,
+			category: validation.data.category as ActivityCategory,
+			type: validation.data.type as ActivityType,
+			activityDate: validation.data.activityDate,
+			location: validation.data.location,
+			organization: validation.data.organization,
+			durationHours: validation.data.durationHours,
+			certificatesAwards: validation.data.certificatesAwards,
 			status: ActivityStatus.SUBMITTED,
 			proofFiles: normalizedProofFiles,
 			isFeatured: false,
-			tags: body.tags || [],
+			tags: validation.data.tags || [],
 			createdAt: now,
 			updatedAt: now,
 			submittedAt: now,

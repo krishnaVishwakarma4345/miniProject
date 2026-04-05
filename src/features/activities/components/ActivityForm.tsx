@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ActivityCategory, ActivityCreateRequest, ActivityType, ProofFile } from '@/types'
 import {
@@ -18,6 +18,24 @@ import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { useUIStore } from '@/store/ui.store'
 import { useAuth } from '@/hooks/useAuth'
+
+const YEAR_OPTIONS = [
+	{ label: 'Year 1', value: '1' },
+	{ label: 'Year 2', value: '2' },
+	{ label: 'Year 3', value: '3' },
+	{ label: 'Year 4', value: '4' },
+]
+
+const SEMESTER_OPTIONS = [
+	{ label: 'Semester 1', value: '1' },
+	{ label: 'Semester 2', value: '2' },
+	{ label: 'Semester 3', value: '3' },
+	{ label: 'Semester 4', value: '4' },
+	{ label: 'Semester 5', value: '5' },
+	{ label: 'Semester 6', value: '6' },
+	{ label: 'Semester 7', value: '7' },
+	{ label: 'Semester 8', value: '8' },
+]
 
 export interface ActivityFormValues {
 	title: string
@@ -62,6 +80,62 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 	const [proofFiles, setProofFiles] = useState<ProofFile[]>([])
 	const [tagInput, setTagInput] = useState('')
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+	const [studentProfile, setStudentProfile] = useState(user?.studentProfile ?? null)
+	const isStudentProfileComplete = Boolean(
+		studentProfile?.studentId &&
+		studentProfile?.year &&
+		studentProfile?.semester &&
+		studentProfile?.division &&
+		studentProfile?.rollNo &&
+		studentProfile?.branch
+	)
+
+	useEffect(() => {
+		setStudentProfile(user?.studentProfile ?? null)
+	}, [user?.studentProfile])
+
+	useEffect(() => {
+		if (!user?.id || user.role !== 'student' || isStudentProfileComplete) {
+			return
+		}
+
+		let isMounted = true
+
+		const loadProfile = async () => {
+			try {
+				const response = await fetch('/api/user/profile', { credentials: 'include' })
+				if (!response.ok) return
+				const payload = (await response.json()) as { profile?: { studentProfile?: typeof studentProfile } }
+				if (isMounted) {
+					setStudentProfile(payload.profile?.studentProfile || null)
+				}
+			} catch {
+				// Ignore profile hydration errors and fall back to the auth store.
+			}
+		}
+
+		void loadProfile()
+
+		return () => {
+			isMounted = false
+		}
+	}, [isStudentProfileComplete, user?.id, user?.role])
+	const studentDetails = {
+		studentId: studentProfile?.studentId?.trim() || '',
+		year: studentProfile?.year ? String(studentProfile.year) : '',
+		semester: studentProfile?.semester ? String(studentProfile.semester) : '',
+		division: studentProfile?.division?.trim() || '',
+		rollNo: studentProfile?.rollNo?.trim() || '',
+		branch: studentProfile?.branch?.trim() || '',
+	}
+	const isStudentDetailsComplete = Boolean(
+		studentDetails.studentId &&
+		studentDetails.year &&
+		studentDetails.semester &&
+		studentDetails.division &&
+		studentDetails.rollNo &&
+		studentDetails.branch
+	)
 
 	const categoryOptions = useMemo(
 		() =>
@@ -138,6 +212,13 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 		event.preventDefault()
 		setFormErrors({})
 
+		if (!isStudentDetailsComplete) {
+			setFormErrors({
+				form: 'Complete your student profile with year, semester, division, student ID, roll number, and branch before submitting an activity.',
+			})
+			return
+		}
+
 		const activityDate = values.activityDate ? new Date(values.activityDate).getTime() : Number.NaN
 		const payload: ActivityCreateRequest = {
 			title: values.title,
@@ -145,6 +226,12 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 			category: values.category,
 			type: values.type as ActivityType,
 			activityDate,
+			studentId: studentDetails.studentId,
+			year: Number(studentDetails.year),
+			semester: Number(studentDetails.semester),
+			division: studentDetails.division,
+			rollNo: studentDetails.rollNo,
+			branch: studentDetails.branch,
 			location: values.location || undefined,
 			organization: values.organization || undefined,
 			durationHours: values.durationHours ? Number(values.durationHours) : undefined,
@@ -199,6 +286,28 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 					<p className='mt-2 text-xs text-slate-500'>Attach at least {minProofs} proof file(s). Currently {proofFiles.length} added.</p>
 				</div>
 			</div>
+
+			<section className='rounded-3xl border border-slate-200 bg-slate-50/70 p-6'>
+				<div className='flex flex-wrap items-center justify-between gap-3'>
+					<div>
+						<h3 className='text-base font-semibold text-slate-900'>Student details required for submission</h3>
+						<p className='text-sm text-slate-500'>These values are pulled from your profile and are required for faculty filtering later.</p>
+					</div>
+					{isStudentDetailsComplete ? (
+						<span className='rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700'>Profile complete</span>
+					) : (
+						<span className='rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700'>Profile incomplete</span>
+					)}
+				</div>
+				<div className='mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3'>
+					<Input label='Student ID' value={studentDetails.studentId} readOnly disabled />
+					<Input label='Roll number' value={studentDetails.rollNo} readOnly disabled />
+					<Input label='Branch' value={studentDetails.branch} readOnly disabled />
+					<Select label='Year' value={studentDetails.year} options={YEAR_OPTIONS} disabled placeholder='Year' />
+					<Select label='Semester' value={studentDetails.semester} options={SEMESTER_OPTIONS} disabled placeholder='Semester' />
+					<Input label='Division' value={studentDetails.division} readOnly disabled />
+				</div>
+			</section>
 
 			<div className='grid gap-5 md:grid-cols-2'>
 				<Input label='Activity Title' name='title' placeholder='Ex: Won Smart India Hackathon 2025' value={values.title} onChange={(event) => handleValueChange('title', event.target.value)} error={formErrors.title} maxLength={200} required />
@@ -278,7 +387,7 @@ export function ActivityForm({ defaultCategory = ActivityCategory.TECH, onSucces
 					Reset form
 				</Button>
 				<div className='flex flex-wrap gap-3'>
-					<Button type='submit' size='lg' loading={isSubmitting}>
+					<Button type='submit' size='lg' loading={isSubmitting} disabled={!isStudentDetailsComplete}>
 						Submit activity
 					</Button>
 				</div>

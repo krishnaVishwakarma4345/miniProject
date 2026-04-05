@@ -36,6 +36,30 @@ export const studentProfileSchema = z.object({
     .min(1, "Year must be between 1 and 4")
     .max(4, "Year must be between 1 and 4"),
 
+  semester: z
+    .number()
+    .int()
+    .min(1, "Semester must be between 1 and 8")
+    .max(8, "Semester must be between 1 and 8"),
+
+  division: z
+    .string()
+    .min(1, "Division is required")
+    .max(10, "Division is too long")
+    .transform((val) => val.trim()),
+
+  rollNo: z
+    .string()
+    .min(1, "Roll number is required")
+    .max(20, "Roll number is too long")
+    .transform((val) => val.trim()),
+
+  branch: z
+    .string()
+    .min(2, "Branch is required")
+    .max(100, "Branch name is too long")
+    .transform((val) => val.trim()),
+
   cgpa: z
     .number()
     .min(0, "CGPA cannot be negative")

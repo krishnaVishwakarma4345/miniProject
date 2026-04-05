@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Avatar, Badge, Button, Input, Select, Spinner, Textarea } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { useUIStore } from '@/store/ui.store'
-import { UserRole } from '@/types'
+import { User, UserRole } from '@/types'
 
 type ProfileRole = 'student' | 'faculty'
 type ProfileMode = 'overview' | 'edit'
@@ -25,6 +25,10 @@ type ProfileData = {
 		studentId?: string
 		department?: string
 		year?: number
+		semester?: number
+		division?: string
+		rollNo?: string
+		branch?: string
 		cgpa?: number
 		skills?: string[]
 		interests?: string[]
@@ -49,6 +53,10 @@ type FormState = {
 	studentId: string
 	department: string
 	year: string
+	semester: string
+	division: string
+	rollNo: string
+	branch: string
 	skills: string
 	employeeId: string
 	designation: string
@@ -80,6 +88,17 @@ const YEAR_OPTIONS = [
 	{ label: 'Year 4', value: '4' },
 ]
 
+const SEMESTER_OPTIONS = [
+	{ label: 'Semester 1', value: '1' },
+	{ label: 'Semester 2', value: '2' },
+	{ label: 'Semester 3', value: '3' },
+	{ label: 'Semester 4', value: '4' },
+	{ label: 'Semester 5', value: '5' },
+	{ label: 'Semester 6', value: '6' },
+	{ label: 'Semester 7', value: '7' },
+	{ label: 'Semester 8', value: '8' },
+]
+
 const emptyFormState: FormState = {
 	fullName: '',
 	phone: '',
@@ -87,6 +106,10 @@ const emptyFormState: FormState = {
 	studentId: '',
 	department: '',
 	year: '',
+	semester: '',
+	division: '',
+	rollNo: '',
+	branch: '',
 	skills: '',
 	employeeId: '',
 	designation: '',
@@ -122,8 +145,11 @@ const calculateCompletion = (role: ProfileRole, profile: ProfileData | null) => 
 			profile.fullName,
 			profile.phone,
 			profile.studentProfile?.studentId,
-			profile.studentProfile?.department,
 			profile.studentProfile?.year,
+			profile.studentProfile?.semester,
+			profile.studentProfile?.division,
+			profile.studentProfile?.rollNo,
+			profile.studentProfile?.branch,
 			profile.bio,
 			profile.studentProfile?.skills?.length,
 		]
@@ -168,11 +194,13 @@ const updateAuthStore = (profile: ProfileData) => {
 		phone: profile.phone,
 		avatar: profile.avatar ?? currentUser.avatar,
 		photoURL: profile.photoURL ?? currentUser.photoURL,
+		studentProfile: profile.studentProfile ?? currentUser.studentProfile,
+		facultyProfile: profile.facultyProfile ?? currentUser.facultyProfile,
 		updatedAt: new Date(),
 		lastProfileUpdateAt: normalizeLastProfileUpdateAt(profile.lastProfileUpdateAt),
 	}
 
-	useAuthStore.getState().setUser(nextUser)
+	useAuthStore.getState().setUser(nextUser as User)
 }
 
 function InfoCard({ label, value }: { label: string; value: string }) {
@@ -216,6 +244,9 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 				if (!isMounted) return
 
 				setProfile(nextProfile)
+				if (nextProfile) {
+					updateAuthStore(nextProfile)
+				}
 				setForm({
 					fullName: nextProfile?.fullName || '',
 					phone: nextProfile?.phone || '',
@@ -223,6 +254,10 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 					studentId: nextProfile?.studentProfile?.studentId || '',
 					department: nextProfile?.studentProfile?.department || nextProfile?.facultyProfile?.department || '',
 					year: nextProfile?.studentProfile?.year ? String(nextProfile.studentProfile.year) : '',
+					semester: nextProfile?.studentProfile?.semester ? String(nextProfile.studentProfile.semester) : '',
+					division: nextProfile?.studentProfile?.division || '',
+					rollNo: nextProfile?.studentProfile?.rollNo || '',
+					branch: nextProfile?.studentProfile?.branch || '',
 					skills: joinList(nextProfile?.studentProfile?.skills),
 					employeeId: nextProfile?.facultyProfile?.employeeId || '',
 					designation: nextProfile?.facultyProfile?.designation || '',
@@ -269,6 +304,10 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						studentId: form.studentId.trim() || undefined,
 						department: form.department.trim() || undefined,
 						year: form.year ? Number(form.year) : undefined,
+						semester: form.semester ? Number(form.semester) : undefined,
+						division: form.division.trim() || undefined,
+						rollNo: form.rollNo.trim() || undefined,
+						branch: form.branch.trim() || undefined,
 						skills: splitList(form.skills),
 					},
 				}
@@ -300,6 +339,9 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 
 			const nextProfile = responseBody?.profile as ProfileData
 			setProfile(nextProfile)
+			if (nextProfile) {
+				updateAuthStore(nextProfile)
+			}
 			setForm({
 				fullName: nextProfile?.fullName || '',
 				phone: nextProfile?.phone || '',
@@ -307,6 +349,10 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 				studentId: nextProfile?.studentProfile?.studentId || '',
 				department: nextProfile?.studentProfile?.department || nextProfile?.facultyProfile?.department || '',
 				year: nextProfile?.studentProfile?.year ? String(nextProfile.studentProfile.year) : '',
+				semester: nextProfile?.studentProfile?.semester ? String(nextProfile.studentProfile.semester) : '',
+				division: nextProfile?.studentProfile?.division || '',
+				rollNo: nextProfile?.studentProfile?.rollNo || '',
+				branch: nextProfile?.studentProfile?.branch || '',
 				skills: joinList(nextProfile?.studentProfile?.skills),
 				employeeId: nextProfile?.facultyProfile?.employeeId || '',
 				designation: nextProfile?.facultyProfile?.designation || '',
@@ -359,7 +405,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						<Avatar src={avatarSrc} alt={profile?.fullName || profileLabel} size='lg' fallback={getInitials(profile?.fullName || profileLabel)} />
 						<div className='min-w-0'>
 							<Badge variant='info' className='mb-2'>{profileLabel}</Badge>
-							<h2 className='break-words text-xl font-semibold text-slate-900'>{profile?.fullName || 'Complete your profile'}</h2>
+							<h2 className='wrap-break-word text-xl font-semibold text-slate-900'>{profile?.fullName || 'Complete your profile'}</h2>
 							<p className='break-all text-sm text-slate-500'>{profile?.email}</p>
 						</div>
 					</div>
@@ -372,7 +418,7 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 						<div className='h-2 rounded-full bg-slate-100'>
 							<div className='h-2 rounded-full bg-slate-900 transition-all' style={{ width: `${completion}%` }} />
 						</div>
-						<p className='mt-3 break-words text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, and review flows stay current.</p>
+						<p className='mt-3 wrap-break-word text-sm text-slate-500'>Add your basic information so your dashboard, portfolio, and review flows stay current.</p>
 					</div>
 
 					<Link
@@ -400,8 +446,11 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 							{role === 'student' ? (
 								<>
 									<InfoCard label='Student ID' value={profile?.studentProfile?.studentId || 'Not added yet'} />
-									<InfoCard label='Department' value={profile?.studentProfile?.department || 'Not added yet'} />
 									<InfoCard label='Year' value={profile?.studentProfile?.year ? `Year ${profile.studentProfile.year}` : 'Not added yet'} />
+									<InfoCard label='Semester' value={profile?.studentProfile?.semester ? `Sem ${profile.studentProfile.semester}` : 'Not added yet'} />
+									<InfoCard label='Branch' value={profile?.studentProfile?.branch || 'Not added yet'} />
+									<InfoCard label='Division' value={profile?.studentProfile?.division || 'Not added yet'} />
+									<InfoCard label='Roll number' value={profile?.studentProfile?.rollNo || 'Not added yet'} />
 									<InfoCard label='Skills' value={joinList(profile?.studentProfile?.skills) || 'Add a few skills'} />
 								</>
 							) : (
@@ -438,8 +487,11 @@ export function ProfileSection({ role, mode, viewHref, editHref }: ProfileSectio
 					{role === 'student' ? (
 						<>
 							<Input label='Student ID' value={form.studentId} onChange={(event) => handleChange('studentId', event.target.value)} required />
-							<Input label='Department' value={form.department} onChange={(event) => handleChange('department', event.target.value)} required />
 							<Select label='Year' value={form.year} onChange={(event) => handleChange('year', event.target.value)} options={YEAR_OPTIONS} placeholder='Select year' required />
+							<Select label='Semester' value={form.semester} onChange={(event) => handleChange('semester', event.target.value)} options={SEMESTER_OPTIONS} placeholder='Select semester' required />
+							<Input label='Division' value={form.division} onChange={(event) => handleChange('division', event.target.value)} required />
+							<Input label='Roll number' value={form.rollNo} onChange={(event) => handleChange('rollNo', event.target.value)} required />
+							<Input label='Branch' value={form.branch} onChange={(event) => handleChange('branch', event.target.value)} required />
 							<Textarea label='Skills' value={form.skills} onChange={(event) => handleChange('skills', event.target.value)} rows={3} containerClassName='sm:col-span-2' placeholder='Comma-separated skills, for example: React, Python, Leadership' hint='Use commas to separate multiple skills.' />
 						</>
 					) : (

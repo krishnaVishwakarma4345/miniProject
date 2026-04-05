@@ -49,6 +49,18 @@ export interface StudentProfile {
   /** Academic year (1, 2, 3, 4) */
   year: number;
 
+  /** Academic semester (1 through 8) */
+  semester: number;
+
+  /** Division / section identifier */
+  division: string;
+
+  /** Roll number assigned by the institution */
+  rollNo: string;
+
+  /** Academic branch / program name */
+  branch: string;
+
   /** CGPA (0.0 to 10.0) */
   cgpa: number;
 

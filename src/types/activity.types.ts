@@ -189,6 +189,21 @@ export interface Activity {
   /** Redundant student identifier used in security rules */
   studentId: string;
 
+  /** Student's academic year captured at submission time */
+  year: number;
+
+  /** Student's semester captured at submission time */
+  semester: number;
+
+  /** Student's division captured at submission time */
+  division: string;
+
+  /** Student's roll number captured at submission time */
+  rollNo: string;
+
+  /** Student's branch captured at submission time */
+  branch: string;
+
   /** Institution tenant ID for isolation/multi-campus support */
   institutionId?: string;
 
@@ -309,6 +324,12 @@ export interface ActivityCreateRequest {
   category: ActivityCategory;
   type: ActivityType;
   activityDate: number;
+  studentId: string;
+  year: number;
+  semester: number;
+  division: string;
+  rollNo: string;
+  branch: string;
   location?: string;
   organization?: string;
   durationHours?: number;
