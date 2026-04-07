@@ -2,7 +2,9 @@
  * Create User Service
  * ============================================================
  * Handles user registration with email/password and Google OAuth.
- * Creates user in Auth and corresponding Firestore document.
+ * For email/password, creates Auth user and sends verification email.
+ * App database profile is created only after verified login session bootstrap.
+ * For Google OAuth, creates Auth user and corresponding Firestore document.
  */
 
 import {
@@ -14,7 +16,7 @@ import {
   UserCredential,
   AuthError,
 } from "firebase/auth";
-import { getAuthInstance, getFirestoreInstance } from "../client";
+import { getAuthInstance } from "../client";
 import { setUser } from "./../../firebase/firestore/users.repository";
 import { getEmailVerificationActionCodeSettings } from "./actionCode";
 import { UserRole, User, UserStatus } from "@/types/user.types";
@@ -37,8 +39,8 @@ const ERROR_MESSAGES: Record<string, string> = {
  * @param email - User email
  * @param password - User password
  * @param displayName - User's full name
- * @param institutionId - Institution ID for multi-tenant support
- * @returns UserCredential on success
+ * @param institutionId - Institution ID captured for post-verification profile bootstrap
+ * @returns UserCredential on success (pending email verification)
  * @throws ApiError on failure
  */
 export const registerWithEmail = async (
@@ -69,35 +71,10 @@ export const registerWithEmail = async (
         getEmailVerificationActionCodeSettings()
       );
 
-      // Attempt to create user profile document. If Firestore client is unavailable,
-      // keep auth registration successful and let profile bootstrap happen later.
-      const newUser: Omit<User, "id"> = {
-        uid: userCredential.user.uid,
-        fullName: displayName,
-        email: normalizedEmail,
-        displayName,
-        role: UserRole.STUDENT,
-        status: UserStatus.ACTIVE,
-        language: "en",
-        mfaEnabled: false,
-        institutionId,
-        photoURL: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true,
-        emailVerified: false,
-        lastLogin: new Date(),
-        metadata: {
-          signUpMethod: "email",
-          loginCount: 1,
-        },
-      };
-
-      try {
-        await setUser(userCredential.user.uid, newUser);
-      } catch (profileError) {
-        console.warn("User auth created, but profile document creation failed.", profileError);
-      }
+      // Email/password sign-up stays pending until verification.
+      // User profile persistence is intentionally deferred to `/api/auth/session`
+      // after a verified login so unverified users are not stored in app DB.
+      void institutionId;
     }
 
     return userCredential;
