@@ -11,6 +11,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
+  signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   UserCredential,
@@ -30,8 +31,42 @@ const ERROR_MESSAGES: Record<string, string> = {
   "auth/weak-password": "Password is too weak. Please use a stronger password.",
   "auth/invalid-email": "Invalid email format.",
   "auth/operation-not-allowed": "User registration is not available.",
+  "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
   "auth/popup-closed-by-user": "Google sign-up was cancelled.",
   "auth/popup-blocked": "Pop-up was blocked. Please allow popups and try again.",
+};
+
+const VERIFICATION_EMAIL_SENT_KEY_PREFIX = "auth-verification-sent-at:";
+const VERIFICATION_EMAIL_COOLDOWN_MS = 5 * 60 * 1000;
+
+const getVerificationEmailStorageKey = (email: string): string => {
+  return `${VERIFICATION_EMAIL_SENT_KEY_PREFIX}${email.trim().toLowerCase()}`;
+};
+
+const canResendVerificationEmail = (email: string): boolean => {
+  if (typeof window === "undefined") return true;
+
+  try {
+    const rawValue = window.localStorage.getItem(getVerificationEmailStorageKey(email));
+    if (!rawValue) return true;
+
+    const lastSentAt = Number(rawValue);
+    if (!Number.isFinite(lastSentAt)) return true;
+
+    return Date.now() - lastSentAt >= VERIFICATION_EMAIL_COOLDOWN_MS;
+  } catch {
+    return true;
+  }
+};
+
+const markVerificationEmailSent = (email: string): void => {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(getVerificationEmailStorageKey(email), String(Date.now()));
+  } catch {
+    // Ignore storage issues; the verification email can still be sent.
+  }
 };
 
 /**
@@ -54,22 +89,52 @@ export const registerWithEmail = async (
     const auth = await getAuthInstance();
 
     // Create user in Auth
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      normalizedEmail,
-      password
-    );
+    let userCredential: UserCredential;
+
+    try {
+      userCredential = await createUserWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password
+      );
+    } catch (error) {
+      const authError = error as Partial<AuthError>;
+
+      if (authError.code !== "auth/email-already-in-use") {
+        throw error;
+      }
+
+      // If a prior signup created the Auth user but never completed verification,
+      // resume that pending registration instead of forcing the user to start over.
+      userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    }
 
     // Update profile with display name
     if (userCredential.user) {
+      await userCredential.user.reload();
+
+      if (userCredential.user.emailVerified) {
+        throw new ApiError(
+          "This email is already registered. Please sign in instead.",
+          "REGISTER_EMAIL_IN_USE",
+          400
+        );
+      }
+
       await updateProfile(userCredential.user, {
         displayName,
       });
+
+      if (!canResendVerificationEmail(normalizedEmail)) {
+        return userCredential;
+      }
 
       await sendEmailVerification(
         userCredential.user,
         getEmailVerificationActionCodeSettings()
       );
+
+      markVerificationEmailSent(normalizedEmail);
 
       // Email/password sign-up stays pending until verification.
       // User profile persistence is intentionally deferred to `/api/auth/session`
