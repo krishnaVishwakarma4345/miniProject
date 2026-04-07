@@ -45,6 +45,85 @@ export function useAuth(): UseAuthReturn {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
   const [initialized, setInitialized] = useState(false)
+  const registrationInstitutionKey = 'auth-registration-institution-id'
+  const registrationInstitutionByEmailKey = 'auth-registration-institution-by-email'
+
+  const normalizeEmail = (value: string): string => value.trim().toLowerCase()
+
+  const readInstitutionByEmailMap = (): Record<string, string> => {
+    if (typeof window === 'undefined') return {}
+
+    try {
+      const raw = window.localStorage.getItem(registrationInstitutionByEmailKey)
+      if (!raw) return {}
+
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') return {}
+
+      return parsed as Record<string, string>
+    } catch {
+      return {}
+    }
+  }
+
+  const persistInstitutionForEmail = (email: string, institutionId: string): void => {
+    if (typeof window === 'undefined' || !institutionId) return
+
+    const normalizedEmail = normalizeEmail(email)
+    const byEmail = readInstitutionByEmailMap()
+    byEmail[normalizedEmail] = institutionId
+
+    try {
+      window.localStorage.setItem(registrationInstitutionByEmailKey, JSON.stringify(byEmail))
+      window.localStorage.setItem(registrationInstitutionKey, institutionId)
+      window.sessionStorage.setItem(registrationInstitutionKey, institutionId)
+    } catch {
+      // Ignore storage quota/permission issues and continue auth flow.
+    }
+  }
+
+  const consumeInstitutionForEmail = (email: string): string | undefined => {
+    if (typeof window === 'undefined') return undefined
+
+    const normalizedEmail = normalizeEmail(email)
+    const byEmail = readInstitutionByEmailMap()
+    const mappedInstitution = byEmail[normalizedEmail]
+
+    if (mappedInstitution) return mappedInstitution
+
+    return (
+      window.sessionStorage.getItem(registrationInstitutionKey)
+      || window.localStorage.getItem(registrationInstitutionKey)
+      || undefined
+    )
+  }
+
+  const clearInstitutionForEmail = (email: string): void => {
+    if (typeof window === 'undefined') return
+
+    const normalizedEmail = normalizeEmail(email)
+    const byEmail = readInstitutionByEmailMap()
+
+    if (Object.prototype.hasOwnProperty.call(byEmail, normalizedEmail)) {
+      delete byEmail[normalizedEmail]
+      try {
+        if (Object.keys(byEmail).length === 0) {
+          window.localStorage.removeItem(registrationInstitutionByEmailKey)
+        } else {
+          window.localStorage.setItem(registrationInstitutionByEmailKey, JSON.stringify(byEmail))
+        }
+      } catch {
+        // Ignore storage failures when cleaning up.
+      }
+    }
+
+    try {
+      window.sessionStorage.removeItem(registrationInstitutionKey)
+      window.localStorage.removeItem(registrationInstitutionKey)
+    } catch {
+      // Ignore storage cleanup issues.
+    }
+  }
 
   const createServerSession = async (
     payload: { idToken: string; userProfile?: Record<string, unknown> },
@@ -170,10 +249,8 @@ export function useAuth(): UseAuthReturn {
 
       const idToken = await userCredential.user.getIdToken()
 
-      // Retrieve institution from sessionStorage if available (set during registration)
-      const registrationInstitutionId = typeof window !== 'undefined' 
-        ? window.sessionStorage.getItem('auth-registration-institution-id') || undefined
-        : undefined
+      // Recover institution selected during registration if profile doc bootstrap is delayed.
+      const registrationInstitutionId = consumeInstitutionForEmail(email)
 
       // Step 2: Create session cookie on server
       const sessionData = await createServerSession({ 
@@ -209,10 +286,7 @@ export function useAuth(): UseAuthReturn {
       authStore.setSessionValid(true)
       authStore.setIsAuthenticated(true)
 
-      // Clear registration institution from sessionStorage after successful login
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('auth-registration-institution-id')
-      }
+      clearInstitutionForEmail(email)
 
       uiStore.addToast({
         type: 'success',
@@ -330,6 +404,8 @@ export function useAuth(): UseAuthReturn {
     authStore.setError(null)
 
     try {
+      persistInstitutionForEmail(email, institutionId)
+
       // Step 1: Register with Firebase and send verification email.
       const userCredential = await registerWithEmail(
         email,

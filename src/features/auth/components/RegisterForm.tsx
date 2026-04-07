@@ -50,7 +50,9 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const savedInstitutionId = window.sessionStorage.getItem(registrationInstitutionKey)
+    const savedInstitutionId =
+      window.sessionStorage.getItem(registrationInstitutionKey)
+      || window.localStorage.getItem(registrationInstitutionKey)
     if (savedInstitutionId) {
       setInstitutionId(savedInstitutionId)
     }
@@ -406,6 +408,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
                     setInstitutionId(nextInstitutionId)
                     if (typeof window !== 'undefined') {
                       window.sessionStorage.setItem(registrationInstitutionKey, nextInstitutionId)
+                      window.localStorage.setItem(registrationInstitutionKey, nextInstitutionId)
                     }
                     if (errors.institutionId) setErrors({ ...errors, institutionId: '' })
                   }}
