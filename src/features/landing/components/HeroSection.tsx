@@ -13,7 +13,8 @@ export function HeroSection() {
       <div className='relative mx-auto grid min-h-[88vh] w-full max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-12 lg:px-8 lg:py-20'>
         <ScrollReveal from='left' className='max-w-2xl'>
           <p className='mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-sky-700'>Inspired by visual search experiences</p>
-          <h1 className='text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl'>
+          <h1 className='text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl'>Smart Student Hub</h1>
+          <h1 className='text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl'>
             The first campus activity platform that feels alive while you scroll
           </h1>
 
@@ -68,22 +69,22 @@ export function HeroSection() {
               </div>
             </motion.div>
 
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.45, delay: 0.35 }}
               className='absolute -left-6 top-8 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-lg'
             >
               2.4x faster approvals
-            </motion.div>
-            <motion.div
+            </motion.div> */}
+            {/* <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.5 }}
               className='absolute -bottom-6 right-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-lg'
             >
               Accreditation packs auto-generated
-            </motion.div>
+            </motion.div> */}
           </div>
         </ScrollReveal>
       </div>
