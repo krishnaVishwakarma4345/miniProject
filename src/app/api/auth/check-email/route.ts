@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserByEmail } from '@/lib/firebase/firestore/users.repository'
+import { getAdminFirestore } from '@/lib/firebase/admin'
 import { ApiError } from '@/types/api.types'
 
 /**
@@ -26,13 +26,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Normalize email (lowercase)
     const normalizedEmail = email.toLowerCase().trim()
 
-    // Check if email exists in Firestore
-    const existingUser = await getUserByEmail(normalizedEmail)
+    // Check if email exists in Firestore using Admin SDK.
+    const adminDb = getAdminFirestore()
+    const byEmailQuery = await adminDb
+      .collection('users')
+      .where('email', '==', normalizedEmail)
+      .limit(1)
+      .get()
+
+    const exists = !byEmailQuery.empty
 
     const response = {
       email: normalizedEmail,
-      exists: existingUser !== null,
-      available: existingUser === null
+      exists,
+      available: !exists
     }
 
     return NextResponse.json(response, { status: 200 })

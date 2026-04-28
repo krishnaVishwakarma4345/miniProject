@@ -83,6 +83,31 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
     void fetchInstitutions()
   }, [])
 
+  useEffect(() => {
+    if (institutionsLoading || institutions.length === 0) {
+      return
+    }
+
+    const selectedInstitutionExists = institutions.some((inst) => inst.id === institutionId)
+
+    if (institutionId && selectedInstitutionExists) {
+      return
+    }
+
+    const fallbackInstitutionId = institutions.length === 1 ? institutions[0].id : ''
+    setInstitutionId(fallbackInstitutionId)
+
+    if (typeof window !== 'undefined') {
+      if (fallbackInstitutionId) {
+        window.sessionStorage.setItem(registrationInstitutionKey, fallbackInstitutionId)
+        window.localStorage.setItem(registrationInstitutionKey, fallbackInstitutionId)
+      } else {
+        window.sessionStorage.removeItem(registrationInstitutionKey)
+        window.localStorage.removeItem(registrationInstitutionKey)
+      }
+    }
+  }, [institutions, institutionsLoading, institutionId])
+
   // Progress bar animation
   useEffect(() => {
     if (!progressRef.current) return
@@ -444,7 +469,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
               </div>
 
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
-                <p>You'll be able to complete your profile after registration.</p>
+                <p>You&apos;ll be able to complete your profile after registration.</p>
               </div>
             </motion.div>
           )}

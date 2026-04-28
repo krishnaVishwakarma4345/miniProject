@@ -30,10 +30,47 @@ export function GoogleSignInButton({
   const { loginWithGoogle, registerWithGoogleAuth, isLoading } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isHovering, setIsHovering] = useState(false)
+  const registrationInstitutionKey = 'auth-registration-institution-id'
 
   const getRegistrationInstitutionId = () => {
     if (typeof window === 'undefined') return ''
-    return window.sessionStorage.getItem('auth-registration-institution-id') || ''
+    return (
+      window.sessionStorage.getItem(registrationInstitutionKey)
+      || window.localStorage.getItem(registrationInstitutionKey)
+      || ''
+    )
+  }
+
+  const resolveRegistrationInstitutionId = async (): Promise<string> => {
+    const existingInstitutionId = getRegistrationInstitutionId()
+    if (existingInstitutionId) return existingInstitutionId
+
+    try {
+      const response = await fetch('/api/institutions')
+      const payload = await response.json()
+
+      if (!response.ok || !payload?.success || !Array.isArray(payload?.data)) {
+        return ''
+      }
+
+      if (payload.data.length !== 1) {
+        return ''
+      }
+
+      const fallbackInstitutionId = String(payload.data[0]?.id || '')
+      if (!fallbackInstitutionId) {
+        return ''
+      }
+
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(registrationInstitutionKey, fallbackInstitutionId)
+        window.localStorage.setItem(registrationInstitutionKey, fallbackInstitutionId)
+      }
+
+      return fallbackInstitutionId
+    } catch {
+      return ''
+    }
   }
 
   const handleGoogleSignIn = async () => {
@@ -41,7 +78,7 @@ export function GoogleSignInButton({
 
     try {
       if (pathname === '/register') {
-        const institutionId = getRegistrationInstitutionId()
+        const institutionId = await resolveRegistrationInstitutionId()
         await registerWithGoogleAuth(institutionId)
       } else {
         await loginWithGoogle()

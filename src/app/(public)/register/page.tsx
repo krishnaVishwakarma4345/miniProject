@@ -47,7 +47,7 @@ export default function RegisterPage() {
       >
       {/* Heading */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
+        <h1 className="text-3xl font-bold red mb-2">Create Account</h1>
         <p className="text-gray-600">Join Smart Student Hub as a student. Your institute admin can promote your account later.</p>
       </div>
 
